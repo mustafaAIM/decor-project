@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
+import uuid
 
 class UserManager(BaseUserManager):
     """manager for User."""
@@ -37,17 +37,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         DEVELOPER = "DEVELOPER", _("Developer")
         CUSTOMER = "CUSTOMER", _("Customer")
 
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(_("email address"), unique=True)
     first_name = models.CharField(_("first name"), max_length=50)
     last_name = models.CharField(_("last name"), max_length=50)
     phone = models.CharField(_("phone number"), max_length=15, blank=True, null=True)
     address = models.TextField(_("address"), blank=True, null=True)
-    is_active = models.BooleanField(_("active"), default=True)
+    is_active = models.BooleanField(_("active"), default=False)
     is_staff = models.BooleanField(_("staff status"), default=False)
     date_joined = models.DateTimeField(_("date joined"), auto_now_add=True)
     role = models.CharField(
         _("role"), max_length=10, choices=Role.choices, default=Role.CUSTOMER
     )
+    otp = models.CharField(_("otp"), max_length=6,null=True,blank=True)
+    image = models.ImageField(_("image"), blank=True , null=True)
     
     objects = UserManager()
 
@@ -59,4 +62,4 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = _("users")
 
     def __str__(self):
-        return f"{self.email} ({self.get_role_display()})"
+        return f"{self.first_name} {self.last_name}"
