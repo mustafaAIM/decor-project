@@ -15,7 +15,7 @@ class UserAdmin(BaseUserAdmin):
     ordering = ("-date_joined",)
     fieldsets = (
         (_("Authentication Info"), {"fields": ("email", "password")}),
-        (_("Personal Info"), {"fields": ("first_name", "last_name", "phone", "address")}),
+        (_("Personal Info"), {"fields": ("first_name", "last_name", "phone", "address","image")}),
         (_("Role and Permissions"), {"fields": ("role", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         (_("Important Dates"), {"fields": ("last_login",)}),
     )

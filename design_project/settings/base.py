@@ -54,7 +54,7 @@ JAZZMIN_SETTINGS = {
     "site_header": "My Admin Header",
     "site_brand": "My Brand",
     "welcome_sign": "Welcome to My Admin",
-    "copyright": "My Company",
+    "copyright": "Django Developers",
     "search_model": "auth.User",
     "user_avatar": "path/to/avatar.png",  
     "show_ui_builder": True,  
@@ -156,3 +156,22 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 AUTH_USER_MODEL = 'authentication.User'
+
+
+# settings.py
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+
+
+#email
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
