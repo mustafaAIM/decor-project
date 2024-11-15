@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: ./entrypoint-django.sh
     env_file:
       - .env
     ports:
@@ -46,8 +47,24 @@ services:
       - media_data:/var/www/media/
     depends_on:
       - app
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+  celery:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/app 
+    depends_on:
+      - db
+    command: ./entrypoint-celery.sh
   
 volumes:
   postgres_data:
   static_data:
   media_data:
+  redis_data:

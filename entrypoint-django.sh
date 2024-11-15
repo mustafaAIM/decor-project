@@ -1,7 +1,10 @@
 #!/bin/bash
 
 echo "Running migrations..."
-python manage.py makemigrations
+python manage.py makemigrations authentication
+python manage.py migrate authentication
+
+python manage.py makemigrations 
 python manage.py migrate
  
 echo "Collecting static files..."
