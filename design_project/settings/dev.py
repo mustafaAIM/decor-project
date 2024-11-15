@@ -1,7 +1,7 @@
 from .base import *
 
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', 'app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]', 'app','45.9.191.191']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/static/'  
