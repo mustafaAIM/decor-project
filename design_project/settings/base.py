@@ -27,7 +27,7 @@ environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-@yw(vg7ka75bsm54^pbux&f2l)2^q1a*ob0_3ue&2r@ri2&%q+"
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_ENV') == 'development'
@@ -38,6 +38,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -45,8 +46,21 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     #apps
-    #"authentication",
+    "authentication",
 ]
+
+JAZZMIN_SETTINGS = {
+    "site_title": "My Admin",
+    "site_header": "My Admin Header",
+    "site_brand": "My Brand",
+    "welcome_sign": "Welcome to My Admin",
+    "copyright": "My Company",
+    "search_model": "auth.User",
+    "user_avatar": "path/to/avatar.png",  
+    "show_ui_builder": True,  
+    "show_sidebar": True,  
+    "navigation_expanded": True,  
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -139,3 +153,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 #media
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+AUTH_USER_MODEL = 'authentication.User'
