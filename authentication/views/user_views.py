@@ -53,7 +53,6 @@ class RegisterViewSet(ViewSet):
       serialized_customer.save()
       user.save()
       response = message("Email verified","تم التحقق من الايميل","OK")
-      response["message"]["data"] = customer_serializer.data
       return Response(response,HTTP_200_OK)
   
 
