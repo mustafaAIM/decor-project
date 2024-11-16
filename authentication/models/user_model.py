@@ -2,6 +2,11 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 import uuid
+#time
+from django.utils import timezone 
+from datetime import timedelta
+#OS 
+# import os
 
 class UserManager(BaseUserManager):
     """manager for User."""
@@ -31,7 +36,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     """User model with additional fields and roles."""
-
+    
     class Role(models.TextChoices):
         ADMIN = "ADMIN", _("Admin")
         DEVELOPER = "DEVELOPER", _("Developer")
@@ -50,6 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         _("role"), max_length=10, choices=Role.choices, default=Role.CUSTOMER
     )
     otp = models.CharField(_("otp"), max_length=6,null=True,blank=True)
+    otp_exp = models.DateTimeField(null = True,blank = True)
     image = models.ImageField(_("image"), blank=True , null=True)
     
     objects = UserManager()
@@ -63,3 +69,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def is_otp_expired(self): 
+        return self.otp_exp < timezone.now() -  timedelta(minutes=10)

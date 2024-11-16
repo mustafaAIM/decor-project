@@ -1,10 +1,16 @@
-def error_message(en,ar):
+def message(en,ar,status):
   return {
-            "error":{
-              "en":en,
-              "ar":ar,
-            }
-          }
+          "message":{
+              "status":str(status),
+              "en":str(en),
+              "ar":str(ar),
+             }
+         }
+          
+
+
+
+
 
 def generate_random_otp() -> str:
   import random
