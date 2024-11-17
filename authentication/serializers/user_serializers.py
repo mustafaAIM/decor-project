@@ -41,7 +41,9 @@ class OTPVerificationSerializer(serializers.Serializer):
           if user.is_otp_expired(): 
               raise ValidationError(message(en = "OTP EXPIRED",ar = "انتهت فعالية الرمز",status="error"))
           user.otp = None
-          user.otp_exp = None        
+          user.otp_exp = None     
+          user.is_active = True
+          user.save()   
           return super().validate(attrs)
 
 
@@ -58,3 +60,42 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data['role'] = self.user.role
         return data
+
+
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise ValidationError(message(en = "No user is associated with this email address", ar = "لا يوجد مستخدم مسجل بهذا الايميل", status = "error"))
+        return value
+
+class PasswordResetVerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    otp = serializers.CharField(max_length=6)
+    def validate(self, attrs):
+        user = User.objects.filter(email=attrs['email'], otp=attrs['otp']).first()
+        if not user:
+            raise ValidationError(message("OTP is invalid", "OTP غير صحيح", "error"))
+        if user.is_otp_expired():
+            raise ValidationError(message(en = "OTP EXPIRED",ar = "انتهت فعالية الرمز",status="error"))
+        user.otp = None
+        user.otp_exp = None
+        user.save()
+        return attrs
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise ValidationError(message(en = "No user is associated with this email address", ar = "لا يوجد مستخدم مسجل بهذا الايميل", status = "error"))
+        return value
+
+    def save(self):
+        user = User.objects.get(email=self.validated_data['email'])
+        user.password = make_password(self.validated_data['new_password'])
+        user.save()
