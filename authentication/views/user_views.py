@@ -47,14 +47,12 @@ class RegisterViewSet(ViewSet):
       serializerd_data = OTPVerificationSerializer(data = request.data)
       serializerd_data.is_valid(raise_exception=True)
       user = User.objects.get(email = request.data.get("email"))
-      user.is_active = True
       serialized_customer = CustomerSerializer(data = {"user":user.id})
       serialized_customer.is_valid(raise_exception=True)
       serialized_customer.save()
-      user.save()
       response = message("Email verified","تم التحقق من الايميل","OK")
-      response["message"]["data"] = customer_serializer.data
       return Response(response,HTTP_200_OK)
+
   
 
 
