@@ -41,7 +41,9 @@ class OTPVerificationSerializer(serializers.Serializer):
           if user.is_otp_expired(): 
               raise ValidationError(message(en = "OTP EXPIRED",ar = "انتهت فعالية الرمز",status="error"))
           user.otp = None
-          user.otp_exp = None        
+          user.otp_exp = None     
+          user.is_active = True
+          user.save()   
           return super().validate(attrs)
 
 
