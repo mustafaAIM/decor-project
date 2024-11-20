@@ -7,8 +7,11 @@ python manage.py migrate authentication
 python manage.py makemigrations customer
 python manage.py migrate customer
 
-python manage.py makemigrations 
-python manage.py migrate
+python manage.py makemigrations customer
+python manage.py migrate customer
+
+python manage.py makemigrations section
+python manage.py migrate section
  
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
