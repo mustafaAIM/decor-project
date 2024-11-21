@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "customer",
     "section",
     "product",
+    #3rd parties
     "django_filters",
 ]
 
@@ -185,6 +186,7 @@ EMAIL_USE_SSL = False
 from datetime import timedelta
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'utils.exception_handler.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),

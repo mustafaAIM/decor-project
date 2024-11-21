@@ -12,6 +12,9 @@ python manage.py migrate customer
 
 python manage.py makemigrations section
 python manage.py migrate section
+
+python manage.py makemigrations product
+python manage.py migrate product
  
 echo "Collecting static files..."
 python manage.py collectstatic --noinput

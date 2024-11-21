@@ -5,11 +5,12 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from authentication.models import User
 #django 
 from django.contrib.auth.hashers import make_password
-from rest_framework.exceptions import ValidationError
+from utils import BadRequestError
 #utils 
 from authentication.utils import message
 
 class RegisterSerializer(serializers.ModelSerializer):
+      email = serializers.EmailField(required=True)
       class Meta:
             model = User
             fields = "__all__"
@@ -21,7 +22,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
       def validate_email(self, value):
         if User.objects.filter(email=value , is_active=True).exists():
-            raise ValidationError(message("this email already used","هذا الايميل مستعمل بالفعل", "error"))
+            raise BadRequestError(en_message="Email registered , Please choose another",ar_message="الايميل  مستخدم بالفعل ,الرجاء استخدام ايميل اخر")
         return value
       
       def create(self, validated_data):
@@ -36,10 +37,10 @@ class OTPVerificationSerializer(serializers.Serializer):
 
       def validate(self, attrs):
           if not User.objects.filter(email=attrs["email"],otp = attrs["otp"]).exists():
-              raise ValidationError(message("OTP is invalid", "OTP غير صحيح", "error"))
+              raise BadRequestError(en_message="OTP is invalid",ar_message="OTP غير صحيح")
           user = User.objects.get(email=attrs["email"],otp = attrs["otp"])
           if user.is_otp_expired(): 
-              raise ValidationError(message(en = "OTP EXPIRED",ar = "انتهت فعالية الرمز",status="error"))
+              raise BadRequestError(en_message="OTP EXPIRED",ar_message="انتهت فعالية الرمز")
           user.otp = None
           user.otp_exp = None     
           user.is_active = True
@@ -53,7 +54,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        token['role'] = user.role
+        token['role'] = user.role 
         return token
 
     def validate(self, attrs):
