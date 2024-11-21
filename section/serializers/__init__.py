@@ -1,1 +1,2 @@
 from .section_serializers import SectionSerializer
+from .category_serializers import CategorySerializer
