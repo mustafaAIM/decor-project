@@ -11,7 +11,7 @@ class BaseService(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    notes = models.TextField(blank=True)
+    notes = models.TextField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     #status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

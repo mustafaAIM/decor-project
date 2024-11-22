@@ -20,8 +20,6 @@ class DesignServiceFile(BaseFile):
         on_delete=models.CASCADE,
         related_name='files'
     )
-    category = models.CharField(max_length=20)
-
     class Meta:
         indexes = [
             models.Index(fields=['service', 'category']),
