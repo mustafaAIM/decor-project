@@ -4,8 +4,11 @@ echo "Running migrations..."
 python manage.py makemigrations authentication
 python manage.py migrate authentication
 
-python manage.py makemigrations customer
-python manage.py migrate customer
+python manage.py makemigrations plan
+python manage.py migrate plan
+
+python manage.py makemigrations service
+python manage.py migrate service
 
 python manage.py makemigrations customer
 python manage.py migrate customer

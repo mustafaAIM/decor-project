@@ -26,8 +26,7 @@ class RegisterViewSet(ViewSet):
       user_data = request.data
       serialized_data = RegisterSerializer(data = user_data)
       serialized_data.is_valid(raise_exception=True)
-      serialized_data.save()
-      raise 
+      serialized_data.save() 
       return Response(serialized_data.data,HTTP_201_CREATED)
   
 
