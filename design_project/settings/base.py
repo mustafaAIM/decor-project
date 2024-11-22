@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "customer",
     "section",
     "product",
+    "service",  
     #3rd parties
     "django_filters",
 ]
