@@ -1,1 +1,1 @@
-from .complaint_permissions import IsCustomerOrStaff, IsStaffOrReadOnly, IsOwnerOrStaff, CanModifyComplaint
+from .complaint_permissions import IsCustomerAndCreateOnly, IsOwnerOrAdmin, IsAdminUser

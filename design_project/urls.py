@@ -26,7 +26,8 @@ urlpatterns = [
     path("api/v1/", include("authentication.urls.v1")),
     path("api/v1/", include("section.urls.v1")),
     path("api/v1/", include("product.urls.v1")),
-    path("api/v1/", include("cart.urls.v1"))
+    path("api/v1/", include("cart.urls.v1")),
+    path("api/v1/", include("complaint.urls.v1")),
 ]
 
 if settings.DEBUG:

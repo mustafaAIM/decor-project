@@ -1,1 +1,1 @@
-from .complaint_model import Complaint
+from .complaint_model import Complaint , ComplaintStatus , ComplaintPriority

@@ -1,114 +1,35 @@
 from rest_framework import permissions
-
-class IsCustomerOrStaff(permissions.BasePermission):
+from authentication.models import User
+class IsAdminUser(permissions.BasePermission):
     """
-    Custom permission to only allow:
-    - Staff members to have full access
-    - Customers to access only their own complaints
-    - Proper method-based permissions
+    Permission to only allow admin users to access the view.
     """
-
     def has_permission(self, request, view):
-        """
-        Define general permission rules:
-        - Must be authenticated
-        - Staff can access everything
-        - Customers can only use specific methods
-        """
-        if not request.user.is_authenticated:
+        return bool(request.user and request.user.role == User.Role.ADMIN)
+
+class IsCustomerAndCreateOnly(permissions.BasePermission):
+    """
+    Permission to only allow customers to create complaints.
+    They can also view their own complaints but cannot modify them.
+    """
+    def has_permission(self, request, view):
+        if not request.user.role == User.Role.ADMIN:
+            if view.action in ['create', 'list', 'retrieve']:
+                return True
             return False
-
-        if request.user.is_staff:
-            return True
-
-        if hasattr(request.user, 'customer'):
-            if view.action == 'statistics':
-                return False
-                
-            if view.action in ['list', 'retrieve', 'create']:
-                return True
-                
-            if view.action in ['update', 'partial_update', 'destroy']:
-                return False  
-                
-            if view.action in ['resolve', 'reopen', 'escalate']:
-                return True
-                
         return False
 
     def has_object_permission(self, request, view, obj):
-        """
-        Define object-level permission rules:
-        - Staff can access any object
-        - Customers can only access their own complaints
-        - Certain actions are restricted based on complaint status
-        """
-        if request.user.is_staff:
-            return True
+        return obj.customer.user == request.user
 
-        if hasattr(request.user, 'customer'):
-            if obj.customer != request.user.customer:
-                return False
-
-            if view.action in ['update', 'partial_update', 'destroy']:
-                return obj.status == 'PENDING'
-
-            if view.action == 'resolve':
-                return obj.status in ['PENDING', 'IN_PROGRESS']
-                
-            if view.action == 'reopen':
-                return obj.status in ['RESOLVED', 'CLOSED']
-                
-            if view.action == 'escalate':
-                return obj.status != 'CLOSED'
-
-            return True
-
-        return False
-
-class IsStaffOrReadOnly(permissions.BasePermission):
+class IsOwnerOrAdmin(permissions.BasePermission):
     """
-    Custom permission to only allow staff members to edit complaints.
-    Others can only read.
+    Permission to only allow owners of a complaint or admins to view it.
     """
-
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user and request.user.is_staff
-
-class IsOwnerOrStaff(permissions.BasePermission):
-    """
-    Custom permission to only allow owners of a complaint or staff members
-    to view/edit it.
-    """
+        return bool(request.user and request.user.is_authenticated)
 
     def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
+        if request.user.role == User.Role.ADMIN:
             return True
-
-        if hasattr(request.user, 'customer'):
-            return obj.customer == request.user.customer
-
-        return False
-
-class CanModifyComplaint(permissions.BasePermission):
-    """
-    Custom permission to control who can modify complaints based on their status
-    and the user's role.
-    """
-
-    def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
-            return True
-
-        if request.method in permissions.SAFE_METHODS:
-            return True
-
-        if hasattr(request.user, 'customer'):
-            return (
-                obj.customer == request.user.customer and 
-                obj.status == 'PENDING'
-            )
-
-        return False
+        return obj.customer.user == request.user and view.action in ['retrieve']

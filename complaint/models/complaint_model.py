@@ -16,6 +16,7 @@ class ComplaintPriority(models.TextChoices):
     URGENT = 'URGENT', 'Urgent'
 
 class Complaint(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=200)
     description = models.TextField()
     

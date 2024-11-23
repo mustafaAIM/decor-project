@@ -23,7 +23,6 @@ class Command(BaseCommand):
                 hex_code=color_data['hex_code']
             )
 
-        # Product data
         products = [
             {
                 'name': 'Classic Cotton T-Shirt',
@@ -147,14 +146,12 @@ class Command(BaseCommand):
             },
         ]
 
-        # Create products and their color variants
         for product_data in products:
             product = Product.objects.create(
                 name=product_data['name'],
                 description=product_data['description']
             )
             
-            # Randomly select 3-5 colors for each product
             selected_colors = random.sample(list(Color.objects.all()), random.randint(3, 5))
             
             for color in selected_colors:

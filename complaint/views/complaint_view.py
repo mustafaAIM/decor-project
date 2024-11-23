@@ -1,193 +1,123 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import permissions
+from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+
+from complaint.models.complaint_model import Complaint, ComplaintStatus
+from complaint.serializers.complaint_serializer import (
+    ComplaintListSerializer,
+    ComplaintDetailSerializer,
+    ComplaintCreateSerializer
+)
 from django.utils import timezone
-from django.db.models import Q
-from django.core.exceptions import ValidationError
-
-from complaint.models import Complaint, ComplaintStatus, ComplaintPriority
-from complaint.serializers import ComplaintSerializer
-from complaint.permissions import IsCustomerOrStaff, CanModifyComplaint
-from utils.api_exceptions import BadRequestError, PermissionError, NotFoundError
-
+from complaint.permissions import IsCustomerAndCreateOnly, IsOwnerOrAdmin, IsAdminUser
 class ComplaintViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for handling Complaint operations with enhanced security and functionality.
+    ViewSet for handling all complaint-related operations.
+    Uses UUID as the lookup field instead of ID.
     """
-    serializer_class = ComplaintSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'uuid'  # Use UUID for lookups
+    lookup_url_kwarg = 'uuid'  # URL parameter name
     
-    def get_permissions(self):
-        """
-        Instantiate and return the list of permissions that this view requires.
-        """
-        if self.action == 'statistics':
-            permission_classes = [permissions.IsAuthenticated, permissions.IsAdminUser]
-        elif self.action in ['update', 'partial_update', 'destroy']:
-            permission_classes = [permissions.IsAuthenticated, CanModifyComplaint]
-        else:
-            permission_classes = [permissions.IsAuthenticated, IsCustomerOrStaff]
-        return [permission() for permission in permission_classes]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ['title', 'description', 'reference_number']
+    ordering_fields = ['created_at', 'updated_at', 'priority', 'status']
+    ordering = ['-created_at']
+    filterset_fields = {
+        'status': ['exact'],
+        'priority': ['exact'],
+        'created_at': ['gte', 'lte'],
+    }
 
     def get_queryset(self):
         """
         Filter complaints based on user role:
-        - Customers can only see their own complaints
-        - Staff can see all complaints
+        - Staff users see all complaints
+        - Regular users see only their complaints
         """
-        user = self.request.user
-        if user.is_staff:
-            return Complaint.objects.all()
-        return Complaint.objects.filter(customer=user.customer)
+        queryset = Complaint.objects.select_related('customer')
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(customer=self.request.user.customer)
+        return queryset
+    
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'create':
+            permission_classes = [IsAuthenticated, IsCustomerAndCreateOnly]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated, IsAdminUser]
+        elif self.action in ['resolve', 'close', 'reopen']:
+            permission_classes = [IsAuthenticated, IsAdminUser]
+        else:  # list, retrieve
+            permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+        return [permission() for permission in permission_classes]
 
-    @action(detail=True, methods=['post'])
-    def resolve(self, request, pk=None):
-        """Resolve a complaint and record resolution timestamp."""
-        complaint = self.get_object()
-        if complaint.status == ComplaintStatus.RESOLVED:
-            raise BadRequestError(
-                en_message="Complaint is already resolved",
-                ar_message="الشكوى تم حلها بالفعل"
-            )
-        
-        try:
-            complaint.status = ComplaintStatus.RESOLVED
-            complaint.resolved_at = timezone.now()
-            complaint.save(update_fields=['status', 'resolved_at'])
-            return Response({'status': 'complaint resolved'})
-        except ValidationError as e:
-            raise BadRequestError(
-                en_message="Failed to resolve complaint",
-                ar_message="فشل في حل الشكوى",
-                extra_data={'details': str(e)}
-            )
 
-    @action(detail=True, methods=['post'])
-    def reopen(self, request, pk=None):
-        """Reopen a resolved or closed complaint."""
-        complaint = self.get_object()
-        if complaint.status not in [ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED]:
-            raise BadRequestError(
-                en_message="Only resolved or closed complaints can be reopened",
-                ar_message="يمكن إعادة فتح الشكاوى المحلولة أو المغلقة فقط",
-                extra_data={'current_status': complaint.status}
-            )
-        
-        try:
-            complaint.status = ComplaintStatus.IN_PROGRESS
-            complaint.resolved_at = None
-            complaint.save(update_fields=['status', 'resolved_at'])
-            return Response({'status': 'complaint reopened'})
-        except ValidationError as e:
-            raise BadRequestError(
-                en_message="Failed to reopen complaint",
-                ar_message="فشل في إعادة فتح الشكوى",
-                extra_data={'details': str(e)}
-            )
-
-    @action(detail=True, methods=['post'])
-    def escalate(self, request, pk=None):
-        """Escalate complaint priority by one level."""
-        complaint = self.get_object()
-        priority_order = {
-            ComplaintPriority.LOW: ComplaintPriority.MEDIUM,
-            ComplaintPriority.MEDIUM: ComplaintPriority.HIGH,
-            ComplaintPriority.HIGH: ComplaintPriority.URGENT
-        }
-        
-        if complaint.priority not in priority_order:
-            raise BadRequestError(
-                en_message="Cannot escalate from current priority level",
-                ar_message="لا يمكن تصعيد مستوى الأولوية الحالي",
-                extra_data={'current_priority': complaint.priority}
-            )
-            
-        try:
-            complaint.priority = priority_order[complaint.priority]
-            complaint.save(update_fields=['priority'])
-            return Response({'status': 'priority escalated'})
-        except ValidationError as e:
-            raise BadRequestError(
-                en_message="Failed to escalate priority",
-                ar_message="فشل في تصعيد الأولوية",
-                extra_data={'details': str(e)}
-            )
-
-    @action(detail=True, methods=['post'])
-    def update_status(self, request, pk=None):
-        """Update complaint status with validation."""
-        complaint = self.get_object()
-        new_status = request.data.get('status')
-        
-        if not new_status or new_status not in ComplaintStatus.values:
-            raise BadRequestError(
-                en_message="Invalid status provided",
-                ar_message="الحالة المقدمة غير صالحة",
-                extra_data={'valid_statuses': ComplaintStatus.values}
-            )
-
-        invalid_transitions = {
-            ComplaintStatus.CLOSED: [ComplaintStatus.PENDING, ComplaintStatus.IN_PROGRESS],
-            ComplaintStatus.PENDING: [ComplaintStatus.CLOSED],
-        }
-        
-        if (complaint.status in invalid_transitions and 
-            new_status in invalid_transitions[complaint.status]):
-            raise BadRequestError(
-                en_message="Invalid status transition",
-                ar_message="انتقال الحالة غير صالح",
-                extra_data={
-                    'current_status': complaint.status,
-                    'requested_status': new_status,
-                    'allowed_transitions': [
-                        status for status in ComplaintStatus.values 
-                        if status not in invalid_transitions.get(complaint.status, [])
-                    ]
-                }
-            )
-
-        try:
-            complaint.status = new_status
-            if new_status == ComplaintStatus.RESOLVED:
-                complaint.resolved_at = timezone.now()
-            complaint.save(update_fields=['status', 'resolved_at'])
-            return Response({'status': 'status updated successfully'})
-        except ValidationError as e:
-            raise BadRequestError(
-                en_message="Failed to update status",
-                ar_message="فشل في تحديث الحالة",
-                extra_data={'details': str(e)}
-            )
-
-    @action(detail=False, methods=['get'])
-    def statistics(self, request):
-        """Get complaint statistics (staff only)."""
-        if not request.user.is_staff:
-            raise PermissionError(
-                en_message="Only staff members can access statistics",
-                ar_message="يمكن للموظفين فقط الوصول إلى الإحصائيات"
-            )
-
-        try:
-            queryset = self.get_queryset()
-            stats = {
-                'total': queryset.count(),
-                'pending': queryset.filter(status=ComplaintStatus.PENDING).count(),
-                'in_progress': queryset.filter(status=ComplaintStatus.IN_PROGRESS).count(),
-                'resolved': queryset.filter(status=ComplaintStatus.RESOLVED).count(),
-                'urgent': queryset.filter(priority=ComplaintPriority.URGENT).count(),
-            }
-            return Response(stats)
-        except Exception as e:
-            raise BadRequestError(
-                en_message="Failed to generate statistics",
-                ar_message="فشل في إنشاء الإحصائيات",
-                extra_data={'details': str(e)}
-            )
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action"""
+        if self.action == 'list':
+            return ComplaintListSerializer
+        elif self.action == 'create':
+            return ComplaintCreateSerializer
+        return ComplaintDetailSerializer
 
     def perform_create(self, serializer):
-        """Ensure complaint is associated with the current user."""
-        if not self.request.user.is_staff:
-            serializer.save(customer=self.request.user.customer)
-        else:
-            serializer.save()
+        """Associate the complaint with the current user's customer"""
+        serializer.save(customer=self.request.user.customer)
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request, uuid=None):
+        """
+        Endpoint to mark a complaint as resolved
+        POST /api/complaints/{uuid}/resolve/
+        """
+        complaint = self.get_object()
+        if complaint.status == ComplaintStatus.CLOSED:
+            return Response(
+                {"detail": "Cannot resolve a closed complaint"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        complaint.status = ComplaintStatus.RESOLVED
+        complaint.resolved_at = timezone.now()
+        complaint.save()
+
+        serializer = self.get_serializer(complaint)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def close(self, request, uuid=None):
+        """
+        Endpoint to close a complaint
+        POST /api/complaints/{uuid}/close/
+        """
+        complaint = self.get_object()
+        complaint.status = ComplaintStatus.CLOSED
+        complaint.save()
+
+        serializer = self.get_serializer(complaint)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def reopen(self, request, uuid=None):
+        """
+        Endpoint to reopen a closed complaint
+        POST /api/complaints/{uuid}/reopen/
+        """
+        complaint = self.get_object()
+        if complaint.status != ComplaintStatus.CLOSED:
+            return Response(
+                {"detail": "Only closed complaints can be reopened"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        complaint.status = ComplaintStatus.IN_PROGRESS
+        complaint.save()
+
+        serializer = self.get_serializer(complaint)
+        return Response(serializer.data)
