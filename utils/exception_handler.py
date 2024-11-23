@@ -4,9 +4,10 @@ from rest_framework import status
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import (
     APIException,
-    ValidationError as DRFValidationError
+    ValidationError as DRFValidationError,
+    PermissionDenied
 )
-from utils.api_exceptions import APIError
+from utils.api_exceptions import APIError , PermissionError
 from typing import Optional, Dict, Any
 
 def format_error_response(
@@ -36,10 +37,8 @@ def custom_exception_handler(exc, context):
     - Maintains DRF's browsable API functionality
     """
     
-    # Get the standard DRF exception response
     response = exception_handler(exc, context)
     
-    # Handle 5xx errors normally
     if isinstance(exc, Exception) and not isinstance(exc, APIException):
         return response
 
@@ -48,11 +47,19 @@ def custom_exception_handler(exc, context):
     except AttributeError:
         status_code = status.HTTP_400_BAD_REQUEST
 
-    # Don't format 5xx errors
     if status_code >= status.HTTP_500_INTERNAL_SERVER_ERROR:
         return response
 
-    # Handle our custom API errors
+
+    if isinstance(exc, PermissionError) or isinstance(exc, PermissionDenied):
+        data = format_error_response(
+            status_code=status.HTTP_403_FORBIDDEN,
+            en_message="Permission denied",
+            ar_message="تم رفض الإذن",
+        )
+        return Response(data, status=status.HTTP_403_FORBIDDEN)
+    
+    
     if isinstance(exc, APIError):
         data = format_error_response(
             status_code=exc.status_code,
@@ -63,7 +70,6 @@ def custom_exception_handler(exc, context):
         )
         return Response(data, status=status_code)
 
-    # Handle DRF ValidationError
     if isinstance(exc, DRFValidationError):
         data = format_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -73,7 +79,6 @@ def custom_exception_handler(exc, context):
         )
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-    # Handle Django ValidationError
     if isinstance(exc, DjangoValidationError):
         data = format_error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -82,8 +87,8 @@ def custom_exception_handler(exc, context):
             errors=exc.messages if hasattr(exc, 'messages') else str(exc)
         )
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
-    # Handle any other 4xx errors
+    
+    
     if response is not None and 400 <= status_code < 500:
         data = format_error_response(
             status_code=status_code,

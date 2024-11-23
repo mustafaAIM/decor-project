@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Product Catalog Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+            @top-center {
+                content: "Product Catalog";
+                font-family: 'Helvetica', sans-serif;
+                font-size: 12px;
+                color: #666;
+                padding: 10px;
+            }
+            @bottom-right {
+                content: counter(page) " of " counter(pages);
+                font-size: 10px;
+                padding: 10px;
+            }
+        }
+
+        body {
+            font-family: 'Helvetica', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-top: 20px solid #1e3c72;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            margin: 10px 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .products-container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            page-break-inside: avoid;
+        }
+
+        .product-image-container {
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+            background: #f8f8f8;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .product-details {
+            padding: 20px;
+        }
+
+        .product-id {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .product-name {
+            color: #1e3c72;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            border-bottom: 2px solid #1e3c72;
+            padding-bottom: 5px;
+        }
+
+        .product-description {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .stats-container {
+            background: white;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Product Catalog</h1>
+        <p>Generated on {{ generated_date }}</p>
+    </div>
+
+    <div class="stats-container">
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-number">{{ products.count }}</div>
+                <div class="stat-label">Total Products</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">{{ products_with_images }}</div>
+                <div class="stat-label">With Images</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">{{ latest_update }}</div>
+                <div class="stat-label">Latest Update</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="products-container">
+        {% for product in products %}
+        <div class="product-card">
+            <div class="product-image-container">
+                {% if product.image %}
+                    
+                    <img src="{{base_url}}{{ product.image.url }}" class="product-image" alt="{{ product.name }}">
+                {% else %}
+                    <div style="height: 100%; display: flex; align-items: center; justify-content: center; background: #eee;">
+                        <span style="color: #999;">No Image Available</span>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="product-details">
+                <div class="product-id">ID: {{ product.uuid }}</div>
+                <h2 class="product-name">{{ product.name }}</h2>
+                <p class="product-description">{{ product.description|default:"No description available." }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <footer>
+        <p>© {{ year }} Your Company Name - Confidential Product Report</p>
+    </footer>
+</body>
+</html>
