@@ -26,7 +26,7 @@ class RegisterViewSet(ViewSet):
       user_data = request.data
       serialized_data = RegisterSerializer(data = user_data)
       serialized_data.is_valid(raise_exception=True)
-      serialized_data.save()
+      serialized_data.save() 
       return Response(serialized_data.data,HTTP_201_CREATED)
   
 
@@ -58,3 +58,40 @@ class RegisterViewSet(ViewSet):
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+
+
+class PasswordResetRequestView(APIView):
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data['email']
+        
+        user = get_object_or_404(User, email=email)
+        user.otp = generate_random_otp()
+        user.otp_exp = timezone.now()
+        user.save()
+        send_reset_password_verification_email_task.delay(email, user.otp)
+
+        return Response(message("OTP Sent","تم إرسال الرمز","success"), status=HTTP_200_OK)
+
+class PasswordResetVerifyOTPView(APIView):
+    def post(self, request):
+        serializer = PasswordResetVerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            message(
+                en="OTP verified. Please enter your new password.", 
+                ar="تم التأكد من الرمز، الرجاء ادخال كلمة المرور الجديدة", 
+                status='success'
+            ), 
+            status=HTTP_200_OK
+        )
+
+class PasswordResetView(APIView):
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(message(en="Password has been reset successfully.", ar="تم إعادة تعيين كلمة المرور بنجاح", status="success"),status=HTTP_200_OK)
