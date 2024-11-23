@@ -14,3 +14,13 @@ def send_verification_email_task(email, otp):
         [email],
         fail_silently=False,
     )
+
+@shared_task
+def send_reset_password_verification_email_task(email, otp):
+    send_mail(
+        'Reset Password',
+        f'OTP for resetting your password: {otp}',
+        os.getenv("EMAIL_HOST_USER"),
+        [email],
+        fail_silently=False,
+    )

@@ -1,10 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from section.views import SectionViewSet
+from complaint.views import ComplaintViewSet
 
 router = DefaultRouter()
-router.register(r'sections', SectionViewSet)
+router.register(r'complaints', ComplaintViewSet, basename='complaint')
 
 urlpatterns = [
     path('', include(router.urls)),
-]
+] 

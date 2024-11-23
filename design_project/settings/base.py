@@ -49,6 +49,13 @@ INSTALLED_APPS = [
     "authentication",
     "customer",
     "section",
+    "product",
+    "service",  
+    "plan",
+    "cart",
+    "employee",
+    "complaint",
+    #3rd parties
     "django_filters",
 ]
 
@@ -80,7 +87,10 @@ ROOT_URLCONF = "design_project.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'product' / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -184,6 +194,7 @@ EMAIL_USE_SSL = False
 from datetime import timedelta
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'utils.exception_handler.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
