@@ -6,4 +6,4 @@ class IsAdminOrReadOnly(BasePermission):
             return True
         if request.user.is_anonymous:
             return False
-        return request.user.role == User.Role.ADMIN
+        return request.user.role == User.Role.ADMIN or request.user.role == User.Role.DEVELOPER

@@ -1,14 +1,12 @@
-# django
-from django.core.exceptions import ValidationError
 # rest_framework
 from rest_framework import serializers
 # models
 from ..models.color_model import Color
 from ..models.product_color_model import ProductColor
-# utils
-from ..utils.response import custom_message
 # serializers
 from .color_serializer import ColorSerializer
+# utile
+from utils.exceptions import BaseCustomException
 
 class ProductColorSerializer(serializers.ModelSerializer):
     color = ColorSerializer()
@@ -25,10 +23,9 @@ class ProductColorSerializer(serializers.ModelSerializer):
     
     def validate_price(self, value):
         if value < 0:
-            raise serializers.ValidationError("Price must be a positive number.")
+            raise BaseCustomException(en_message="Price must be a positive number.", ar_message="السعر يجب أن يكون قيمة موجبة", status_code=400)
         return value
-
     def validate_quantity(self, value):
         if value < 0:
-            raise serializers.ValidationError("Quantity must be a positive number.")
+            raise BaseCustomException(en_message="Quantity must be a positive number.", ar_message="الكمية يجب أن تكون قيمة موجبة", status_code=400)
         return value

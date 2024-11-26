@@ -18,7 +18,10 @@ python manage.py migrate section
 
 python manage.py makemigrations product
 python manage.py migrate product
- 
+
+python manage.py makemigrations design
+python manage.py migrate design
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
  

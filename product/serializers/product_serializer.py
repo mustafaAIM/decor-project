@@ -4,8 +4,6 @@ from django.db import models
 from rest_framework import serializers
 # models
 from ..models.product_model import Product
-from ..models.product_color_model import ProductColor
-from ..models.color_model import Color
 from ..models.rate_model import Rate
 # serializers
 from .product_color_serializer import ProductColorSerializer
