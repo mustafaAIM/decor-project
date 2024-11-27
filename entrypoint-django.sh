@@ -24,7 +24,6 @@ python manage.py migrate product
 
 python manage.py makemigrations design
 python manage.py migrate design
-
  
 python manage.py makemigrations cart
 python manage.py migrate cart
