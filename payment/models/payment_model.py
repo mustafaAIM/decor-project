@@ -11,8 +11,8 @@ class Payment(models.Model):
     )
     
     PAYMENT_TYPE = (
-        ('product', 'Product Order'),
-        ('service', 'Service Order')
+        ('product', 'Product Payment'),
+        ('service', 'Service Payment')
     )
     
     PAYMENT_METHOD = (

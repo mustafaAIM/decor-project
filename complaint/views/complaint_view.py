@@ -19,8 +19,8 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     Uses UUID as the lookup field instead of ID.
     """
     permission_classes = [IsAuthenticated]
-    lookup_field = 'uuid'  # Use UUID for lookups
-    lookup_url_kwarg = 'uuid'  # URL parameter name
+    lookup_field = 'uuid'  
+    lookup_url_kwarg = 'uuid'  
     
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['title', 'description', 'reference_number']
@@ -53,7 +53,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAuthenticated, IsAdminUser]
         elif self.action in ['resolve', 'close', 'reopen']:
             permission_classes = [IsAuthenticated, IsAdminUser]
-        else:  # list, retrieve
+        else:  
             permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
         return [permission() for permission in permission_classes]
 
