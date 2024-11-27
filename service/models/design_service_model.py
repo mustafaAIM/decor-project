@@ -10,7 +10,7 @@ class DesignService(BaseService):
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
     area = models.DecimalField(max_digits=10, decimal_places=4)
     plan = models.ForeignKey(Plan, on_delete=models.CASCADE)
-    prefered_colors = models.ManyToManyField(Color, null= True ,blank=True)
+    prefered_colors = models.ManyToManyField(Color ,blank=True)
 
 
 
@@ -20,10 +20,8 @@ class DesignServiceFile(BaseFile):
         on_delete=models.CASCADE,
         related_name='files'
     )
-    category = models.CharField(max_length=20)
-
     class Meta:
         indexes = [
-            models.Index(fields=['service', 'category']),
+            models.Index(fields=['service']),
             models.Index(fields=['file_type']),
         ]

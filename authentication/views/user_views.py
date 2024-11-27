@@ -44,17 +44,15 @@ class RegisterViewSet(ViewSet):
   #TODO response check
   @action(detail=False, methods=['post'])
   def verify(self, request, *args, **kwargs):
-      serializerd_data = OTPVerificationSerializer(data = request.data)
-      serializerd_data.is_valid(raise_exception=True)
-      user = User.objects.get(email = request.data.get("email"))
-      serialized_customer = CustomerSerializer(data = {"user":user.id})
-      serialized_customer.is_valid(raise_exception=True)
-      serialized_customer.save()
-      response = message("Email verified","تم التحقق من الايميل","OK")
-      return Response(response,HTTP_200_OK)
-
-  
-
+        serializerd_data = OTPVerificationSerializer(data = request.data)
+        serializerd_data.is_valid(raise_exception=True)
+        user = User.objects.get(email = request.data.get("email"))
+        serialized_customer = CustomerSerializer(data = {"user":user.id})
+        serialized_customer.is_valid(raise_exception=True)
+        serialized_customer.save()
+        response = message("Email verified","تم التحقق من الايميل","OK")
+        return Response(response,HTTP_200_OK)
+      
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer

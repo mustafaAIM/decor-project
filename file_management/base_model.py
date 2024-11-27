@@ -11,7 +11,7 @@ class BaseFile(models.Model):
     file = models.FileField(upload_to='files/%Y/%m/%d/')
     file_type = models.CharField(max_length=10, choices=FILE_TYPES)
     is_primary = models.BooleanField(default=False)
-    title = models.CharField(max_length=255, blank=True)
+    title = models.CharField(max_length=255, null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,95 +1,77 @@
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
-from rest_framework import status
 from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework.exceptions import (
-    APIException,
-    ValidationError as DRFValidationError
-)
-from utils.api_exceptions import APIError
-from typing import Optional, Dict, Any
+from rest_framework.exceptions import APIException
+from utils.messages import ResponseFormatter
 
-def format_error_response(
-    status_code: int,
-    en_message: str,
-    ar_message: str,
-    error_code: Optional[str] = None,
-    errors: Optional[Dict[str, Any]] = None
-) -> Dict:
-    """Format error response consistently"""
-    response = {
-        "message": {
-            "status": error_code or str(status_code),
-            "en": en_message,
-            "ar": ar_message,
-        }
-    }
-    if errors:
-        response["errors"] = errors
-    return response
+def get_error_message(detail):
+    """Extract readable error message from DRF error detail"""
+    if isinstance(detail, dict):
+        # Get the first error message from the dict
+        for field, errors in detail.items():
+            if isinstance(errors, list):
+                return str(errors[0])
+            return str(errors)
+    elif isinstance(detail, list):
+        # Get the first error from the list
+        return str(detail[0])
+    return str(detail)
+
+def get_error_details(detail):
+    """Extract readable error message and field from DRF error detail"""
+    if isinstance(detail, dict):
+        # Get the first error message from the dict
+        for field, errors in detail.items():
+            if isinstance(errors, list):
+                return field, str(errors[0])
+            return field, str(errors)
+    elif isinstance(detail, list):
+        # Get the first error from the list
+        return None, str(detail[0])
+    return None, str(detail)
 
 def custom_exception_handler(exc, context):
     """
-    Custom exception handler that:
-    - Standardizes all 4xx error responses
-    - Lets 5xx errors pass through normally
-    - Maintains DRF's browsable API functionality
+    Custom exception handler that formats all errors consistently
     """
-    
-    # Get the standard DRF exception response
-    response = exception_handler(exc, context)
-    
-    # Handle 5xx errors normally
-    if isinstance(exc, Exception) and not isinstance(exc, APIException):
-        return response
-
     try:
         status_code = exc.status_code
     except AttributeError:
-        status_code = status.HTTP_400_BAD_REQUEST
+        status_code = 400
 
-    # Don't format 5xx errors
-    if status_code >= status.HTTP_500_INTERNAL_SERVER_ERROR:
-        return response
-
-    # Handle our custom API errors
-    if isinstance(exc, APIError):
-        data = format_error_response(
-            status_code=exc.status_code,
-            en_message=exc.en_message,
-            ar_message=exc.ar_message,
-            error_code=exc.error_code,
-            errors=exc.extra_data
-        )
-        return Response(data, status=status_code)
-
-    # Handle DRF ValidationError
-    if isinstance(exc, DRFValidationError):
-        data = format_error_response(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            en_message="Validation error",
-            ar_message="خطأ في التحقق",
-            errors=exc.detail
-        )
-        return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
-    # Handle Django ValidationError
     if isinstance(exc, DjangoValidationError):
-        data = format_error_response(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            en_message="Validation error",
-            ar_message="خطأ في التحقق",
-            errors=exc.messages if hasattr(exc, 'messages') else str(exc)
+        return ResponseFormatter.error_response(
+            en="Validation error",
+            ar="خطأ في التحقق",
+            status_code=400
         )
-        return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-    # Handle any other 4xx errors
-    if response is not None and 400 <= status_code < 500:
-        data = format_error_response(
-            status_code=status_code,
-            en_message=str(exc.detail) if hasattr(exc, 'detail') else str(exc),
-            ar_message=str(exc.detail) if hasattr(exc, 'detail') else str(exc),
+    if isinstance(exc, APIException):
+        if hasattr(exc, 'en_message') and hasattr(exc, 'ar_message'):
+            # Our custom exceptions
+            return ResponseFormatter.error_response(
+                en=exc.en_message,
+                ar=exc.ar_message,
+                status_code=status_code
+            )
+        else:
+            # DRF's built-in exceptions
+            field, error_message = get_error_details(exc.detail)
+            response_data = {
+                "status": "error",
+                "en": error_message,
+                "ar": error_message,  # You might want to translate this
+            }
+            if field:
+                response_data["field"] = field
+            return Response(response_data, status=status_code)
+
+    if exc is not None:
+        print(exc)
+        return ResponseFormatter.error_response(
+            en="Internal server error",
+            ar="خطأ في الخادم",
+            status_code=500
         )
-        return Response(data, status=status_code)
 
-    return response
+    return exception_handler(exc, context)

@@ -52,6 +52,10 @@ INSTALLED_APPS = [
     "product",
     "service", 
     "plan",
+    "cart",
+    "employee",
+    "complaint",
+    "plan",
     "design",
     #3rd parties
     "django_filters",
@@ -85,7 +89,10 @@ ROOT_URLCONF = "design_project.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'product' / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
