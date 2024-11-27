@@ -36,6 +36,7 @@ class OTPVerificationSerializer(serializers.Serializer):
       otp = serializers.CharField(max_length=6)
 
       def validate(self, attrs):
+          
           if not User.objects.filter(email=attrs["email"],otp = attrs["otp"]).exists():
               raise BadRequestError(en_message="OTP is invalid",ar_message="OTP غير صحيح")
           user = User.objects.get(email=attrs["email"],otp = attrs["otp"])
@@ -70,7 +71,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if not User.objects.filter(email=value).exists():
-            raise ValidationError(message(en = "No user is associated with this email address", ar = "لا يوجد مستخدم مسجل بهذا الايميل", status = "error"))
+            raise BadRequestError(en_message="No user is associated with this email address", ar_message="لا يوجد مستخدم مسجل بهذا الايميل")
         return value
 
 class PasswordResetVerifyOTPSerializer(serializers.Serializer):
@@ -79,9 +80,9 @@ class PasswordResetVerifyOTPSerializer(serializers.Serializer):
     def validate(self, attrs):
         user = User.objects.filter(email=attrs['email'], otp=attrs['otp']).first()
         if not user:
-            raise ValidationError(message("OTP is invalid", "OTP غير صحيح", "error"))
+            raise BadRequestError(en_message="OTP is invalid", ar_message="OTP غير صحيح")
         if user.is_otp_expired():
-            raise ValidationError(message(en = "OTP EXPIRED",ar = "انتهت فعالية الرمز",status="error"))
+            raise BadRequestError(en_message="OTP EXPIRED", ar_message="انتهت فعالية الرمز")
         user.otp = None
         user.otp_exp = None
         user.save()
@@ -93,7 +94,7 @@ class PasswordResetSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if not User.objects.filter(email=value).exists():
-            raise ValidationError(message(en = "No user is associated with this email address", ar = "لا يوجد مستخدم مسجل بهذا الايميل", status = "error"))
+            raise BadRequestError(en_message="No user is associated with this email address", ar_message="لا يوجد مستخدم مسجل بهذا الايميل")
         return value
 
     def save(self):
