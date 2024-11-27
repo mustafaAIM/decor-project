@@ -55,7 +55,6 @@ INSTALLED_APPS = [
     "cart",
     "employee",
     "complaint",
-    "plan",
     "design",
     #3rd parties
     "django_filters",
