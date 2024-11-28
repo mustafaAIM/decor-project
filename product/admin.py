@@ -43,8 +43,8 @@ class ProductColorAdmin(admin.ModelAdmin):
 
 @admin.register(Rate)
 class RateAdmin(admin.ModelAdmin):
-    list_display = ('product', 'user', 'score')
+    list_display = ('product', 'customer', 'score')
     list_filter = ('score',)
-    search_fields = ('product__name', 'user__email')
-    autocomplete_fields = ['product', 'user']
+    search_fields = ('product__name', 'customer__user__email')
+    autocomplete_fields = ['product', 'customer']
     list_per_page = 25

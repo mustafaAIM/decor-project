@@ -10,5 +10,5 @@ router.register(r'rate', RateViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-     path('report/', generate_product_report, name='product_report'),
+    path('report/', generate_product_report, name='product_report'),
 ]
