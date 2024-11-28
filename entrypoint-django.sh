@@ -1,41 +1,95 @@
 #!/bin/bash
 
-# echo "Running migrations..."
-# python manage.py makemigrations authentication
-# python manage.py migrate authentication
+echo "Starting Django deployment..."
 
-# python manage.py makemigrations employee
-# python manage.py migrate employee 
+# Function to run migrations for an app
+run_migrations() {
+    app_name=$1
+    echo "Running migrations for $app_name..."
+    python manage.py makemigrations $app_name --noinput || exit 1
+    python manage.py migrate $app_name --noinput || exit 1
+}
 
-# python manage.py makemigrations plan
-# python manage.py migrate plan
+# Function to check if migrations are needed
+check_migrations() {
+    python manage.py showmigrations | grep -q "\[ \]"
+    return $?
+}
 
-# python manage.py makemigrations service
-# python manage.py migrate service
+echo "Checking database connection..."
+python << END
+import sys
+import time
+import psycopg2
+from django.db import connections
+from django.db.utils import OperationalError
 
-# python manage.py makemigrations customer
-# python manage.py migrate customer
+start_time = time.time()
+while True:
+    try:
+        connections['default'].ensure_connection()
+        break
+    except OperationalError:
+        if time.time() - start_time > 30:
+            print("Could not connect to database after 30 seconds")
+            sys.exit(1)
+        time.sleep(1)
+END
 
-# python manage.py makemigrations section
-# python manage.py migrate section
+# Clear any pending migrations first
+echo "Checking for conflicting migrations..."
+python manage.py migrate --fake-initial
 
-# python manage.py makemigrations product
-# python manage.py migrate product
+# Run migrations in dependency order
+echo "Running migrations in order..."
 
-# python manage.py makemigrations design
-# python manage.py migrate design
- 
-# python manage.py makemigrations cart
-# python manage.py migrate cart
+# Base apps (no dependencies)
+run_migrations "authentication"  # User model needs to be first
+run_migrations "file_management"
 
-# python manage.py makemigrations complaint
-# python manage.py migrate complaint
+# Apps that depend on authentication
+run_migrations "employee"
+run_migrations "customer"
+run_migrations "admin"
 
-# python manage.py makemigrations 
-# python manage.py migrate 
+# Feature apps
+run_migrations "section"  # Categories need to exist before products
+run_migrations "product"
+run_migrations "service"
+run_migrations "plan"
+run_migrations "design"
+run_migrations "cart"
+run_migrations "complaint"
 
-# echo "Collecting static files..."
-# python manage.py collectstatic --noinput
- 
+# Final migration check
+echo "Running any remaining migrations..."
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput
+
+# Verify all migrations are applied
+if check_migrations; then
+    echo "Some migrations are not applied. Please check the migration status."
+    python manage.py showmigrations
+    exit 1
+fi
+
+echo "Creating cache tables..."
+python manage.py createcachetable --noinput
+
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
+# Optional: Run data seeding if needed
+if [ "$DJANGO_SETTINGS_MODULE" = "design_project.settings.dev" ]; then
+    echo "Development environment detected, seeding initial data..."
+    python manage.py seed_products
+fi
+
 echo "Starting Gunicorn..."
-exec gunicorn design_project.wsgi:application --bind 0.0.0.0:8000
+exec gunicorn design_project.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --workers 3 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info
