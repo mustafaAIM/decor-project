@@ -13,7 +13,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['uuid', 'name', 'image', 'average_rating']
+        fields = ['uuid', 'name', 'image','category', 'average_rating']
     
     def get_average_rating(self, obj):
         ratings = Rate.objects.filter(product=obj)
