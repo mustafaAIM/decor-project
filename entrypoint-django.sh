@@ -16,25 +16,6 @@ check_migrations() {
     return $?
 }
 
-echo "Checking database connection..."
-python << END
-import sys
-import time
-import psycopg2
-from django.db import connections
-from django.db.utils import OperationalError
-
-start_time = time.time()
-while True:
-    try:
-        connections['default'].ensure_connection()
-        break
-    except OperationalError:
-        if time.time() - start_time > 30:
-            print("Could not connect to database after 30 seconds")
-            sys.exit(1)
-        time.sleep(1)
-END
 
 # Clear any pending migrations first
 echo "Checking for conflicting migrations..."
@@ -45,7 +26,7 @@ echo "Running migrations in order..."
 
 # Base apps (no dependencies)
 run_migrations "authentication"  # User model needs to be first
-run_migrations "file_management"
+#run_migrations "file_management"
 
 # Apps that depend on authentication
 run_migrations "employee"
@@ -62,28 +43,24 @@ run_migrations "cart"
 run_migrations "complaint"
 
 # Final migration check
-echo "Running any remaining migrations..."
-python manage.py makemigrations --noinput
-python manage.py migrate --noinput
+#echo "Running any remaining migrations..."
+#python manage.py makemigrations --noinput
+#python manage.py migrate --noinput
 
 # Verify all migrations are applied
-if check_migrations; then
-    echo "Some migrations are not applied. Please check the migration status."
-    python manage.py showmigrations
-    exit 1
-fi
 
-echo "Creating cache tables..."
-python manage.py createcachetable --noinput
+#echo "Creating cache tables..."
+#python manage.py createcachetable 
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic
 
 # Optional: Run data seeding if needed
-if [ "$DJANGO_SETTINGS_MODULE" = "design_project.settings.dev" ]; then
-    echo "Development environment detected, seeding initial data..."
-    python manage.py seed_products
-fi
+#if [ "$DJANGO_SETTINGS_MODULE" = "design_project.settings.dev" ]; then
+#    echo "Development environment detected, seeding initial data..."
+#    python manage.py seed_products
+#
+#fi
 
 echo "Starting Gunicorn..."
 exec gunicorn design_project.wsgi:application \
