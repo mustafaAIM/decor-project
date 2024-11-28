@@ -11,7 +11,7 @@ from ..models.color_model import Color
 from .product_color_serializer import ProductColorSerializer
 
 class ProductDetailSerializer(serializers.ModelSerializer):
-    product_colors = ProductColorSerializer(many=True)
+    product_colors = ProductColorSerializer(source = "product_colors.all", many=True)
     average_rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:

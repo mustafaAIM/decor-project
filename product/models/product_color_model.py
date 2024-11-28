@@ -5,7 +5,7 @@ from .color_model import Color
 
 import uuid
 
-class   ProductColor(models.Model):
+class ProductColor(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     product = models.ForeignKey(Product, related_name='product_colors', on_delete=models.CASCADE)
     color = models.ForeignKey(Color, on_delete=models.CASCADE)
