@@ -1,1 +1,0 @@
-from .payment_model import Payment
