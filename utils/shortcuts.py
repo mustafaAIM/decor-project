@@ -28,5 +28,4 @@ def get_object_or_404(
         raise NotFoundError(
             en_message=en_message or f"{model_name} not found",
             ar_message=ar_message or f"لم يتم العثور على {model_name}",
-            extra_data=extra_data or kwargs
         )

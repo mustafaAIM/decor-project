@@ -30,21 +30,23 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ['uuid', 'items', 'total_items', 'subtotal', 'created_at', 'updated_at']
         read_only_fields = ['uuid', 'created_at', 'updated_at']
 
-
-class AddToCartSerializer(serializers.Serializer):
+class CartItemInputSerializer(serializers.Serializer):
     product_color_uuid = serializers.UUIDField()
     quantity = serializers.IntegerField(min_value=1)
 
-    def validate(self, data):
-        product_color = get_object_or_404(ProductColor, uuid=data['product_color_uuid'])
-        if data['quantity'] > product_color.quantity:
-            raise BadRequestError(
-                en_message=f"Only {product_color.quantity} items available in stock",
-                ar_message=f"يتوفر فقط {product_color.quantity} قطع في المخزون"
-            )
+class AddToCartSerializer(serializers.Serializer):
+    items = CartItemInputSerializer(many=True)
 
-        data['product_color'] = product_color
-        return data
+    def validate_items(self, items):
+        for item in items:
+            product_color = get_object_or_404(ProductColor, uuid=item['product_color_uuid'])
+            if item['quantity'] > product_color.quantity:
+                raise BadRequestError(
+                    en_message=f"Only {product_color.quantity} items available in stock for {product_color.product.name}",
+                    ar_message=f"يتوفر فقط {product_color.quantity} قطع في المخزون {product_color.product.name}"
+                )
+            item['product_color'] = product_color
+        return items
 
 class UpdateCartItemSerializer(serializers.Serializer):
     item_uuid = serializers.UUIDField()

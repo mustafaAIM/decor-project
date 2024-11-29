@@ -35,19 +35,19 @@ class CartItemCreateView(CartMixin, generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        validated_data = serializer.validated_data
-        product_color = validated_data['product_color']
-        quantity = validated_data['quantity']
+        for item_data in serializer.validated_data['items']:
+            product_color = item_data['product_color']
+            quantity = item_data['quantity']
 
-        cart_item, created = CartItem.objects.get_or_create(
-            cart=cart,
-            product_color=product_color,
-            defaults={'quantity': quantity}
-        )
+            cart_item, created = CartItem.objects.get_or_create(
+                cart=cart,
+                product_color=product_color,
+                defaults={'quantity': quantity}
+            )
 
-        if not created:
-            cart_item.quantity += quantity
-            cart_item.save()
+            if not created:
+                cart_item.quantity += quantity
+                cart_item.save()
 
         return Response(CartSerializer(cart).data)
 
