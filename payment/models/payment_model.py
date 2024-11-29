@@ -31,12 +31,10 @@ class Payment(models.Model):
         choices=PaymentProvider.choices
     )
     
-    # Generic relation to either Order or Service
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.UUIDField()
     content_object = GenericForeignKey('content_type', 'object_id')
     
-    # Payment provider specific fields
     provider_payment_id = models.CharField(max_length=255, null=True, blank=True)
     provider_payment_intent = models.CharField(max_length=255, null=True, blank=True)
     
