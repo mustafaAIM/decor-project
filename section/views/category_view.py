@@ -22,4 +22,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(section__name__icontains=section_name)
         return queryset
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({"categories": serializer.data})
+
     
