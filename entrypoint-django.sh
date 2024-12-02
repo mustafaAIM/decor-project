@@ -43,9 +43,9 @@ run_migrations "cart"
 run_migrations "complaint"
 
 # Final migration check
-#echo "Running any remaining migrations..."
-#python manage.py makemigrations --noinput
-#python manage.py migrate --noinput
+echo "Running any remaining migrations..."
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput
 
 # Verify all migrations are applied
 
@@ -53,7 +53,7 @@ run_migrations "complaint"
 #python manage.py createcachetable 
 
 echo "Collecting static files..."
-python manage.py collectstatic
+#python manage.py collectstatic
 
 # Optional: Run data seeding if needed
 #if [ "$DJANGO_SETTINGS_MODULE" = "design_project.settings.dev" ]; then
