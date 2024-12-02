@@ -21,8 +21,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             }
 
       def validate_email(self, value):
-        if User.objects.filter(email=value , is_active=True).exists():
-            raise BadRequestError(en_message="Email registered , Please choose another",ar_message="الايميل  مستخدم بالفعل ,الرجاء استخدام ايميل اخر")
+        existing_user = User.objects.filter(email=value).first()
+        if existing_user:
+            if existing_user.is_active:
+                raise BadRequestError(
+                    en_message="Email is already registered and verified. Please login instead.",
+                    ar_message="البريد الإلكتروني مسجل ومفعل بالفعل. الرجاء تسجيل الدخول"
+                )
+            existing_user.delete()
         return value
       
       def create(self, validated_data):
