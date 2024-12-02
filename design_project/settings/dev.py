@@ -13,9 +13,12 @@ MEDIA_ROOT = '/var/www/media/'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://45.9.191.191",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 CORS_ALLOW_METHODS = [
     'DELETE',
