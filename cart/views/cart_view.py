@@ -13,14 +13,14 @@ class CartMixin:
     permission_classes = [IsAuthenticated]
     
     def get_or_create_cart(self):
-        cart, _ = Cart.objects.get_or_create(user=self.request.user)
+        cart, _ = Cart.objects.get_or_create(customer=self.request.user.customer)
         return cart
 
 class CartListView(CartMixin, generics.ListAPIView):
     serializer_class = CartSerializer
 
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user)
+        return Cart.objects.filter(customer=self.request.user.customer)
 
     def list(self, request, *args, **kwargs):
         cart = self.get_or_create_cart()

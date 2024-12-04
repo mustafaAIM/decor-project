@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "employee",
     "complaint",
     "design",
+    "order",
     #3rd parties
     "django_filters",
     "corsheaders"
