@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "complaint",
     "design",
     "order",
+    "payment",
     #3rd parties
     "django_filters",
     "corsheaders"
@@ -216,7 +217,7 @@ SIMPLE_JWT = {
 }
 
 # PayPal Settings
-PAYPAL_MODE = os.getenv('PAYPAL_MODE', 'sandbox')  #TODO make it live for production ready product : MUSTAFA :)
+PAYPAL_MODE = 'sandbox'  # Change to 'live' in production
 PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')
 PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET')
 PAYPAL_RETURN_URL = os.getenv('PAYPAL_RETURN_URL', 'http://localhost:3000/payment/success')
