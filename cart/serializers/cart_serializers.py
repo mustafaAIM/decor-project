@@ -12,12 +12,12 @@ class CartItemSerializer(serializers.ModelSerializer):
     color_hex = serializers.CharField(source='product_color.color.hex_code', read_only=True)
     price = serializers.DecimalField(source='product_color.price', max_digits=10, decimal_places=2, read_only=True)
     subtotal = serializers.DecimalField(read_only=True, max_digits=10, decimal_places=2)
-
+    total_quantity = serializers.IntegerField(source = "product_color.quantity",read_only=True)
     class Meta:
         model = CartItem
         fields = [
             'uuid', 'product_uuid', 'product_name', 'product_image',
-            'color_hex', 'quantity', 'price', 'subtotal'
+            'color_hex', 'quantity', 'price', 'subtotal',"total_quantity"
         ]
 
 class CartSerializer(serializers.ModelSerializer):
