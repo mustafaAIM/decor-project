@@ -41,7 +41,8 @@ run_migrations "plan"
 run_migrations "design"
 run_migrations "cart"
 run_migrations "complaint"
-
+run_migrations "order"
+run_migrations "payment"
 # Final migration check
 echo "Running any remaining migrations..."
 python manage.py makemigrations --noinput
