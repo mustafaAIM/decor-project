@@ -2,24 +2,23 @@
 from django.db import models
 # rest framework
 from rest_framework import serializers
-
-from utils.shortcuts import get_object_or_404
 # models
 from ..models.product_model import Product
 from ..models.rate_model import Rate
-from section.models.category_model import Category
 # serializers
 from .product_color_serializer import ProductColorSerializer
+from section.serializers.category_serializers import CategorySerializer
 
-class ProductSerializer(serializers.ModelSerializer):
+class ProductRetrieveSerializer(serializers.ModelSerializer):
+    product_colors = ProductColorSerializer(source="product_colors.all", many=True)
     average_rating = serializers.SerializerMethodField(read_only=True)
-    category = serializers.UUIDField()
+    category = CategorySerializer()
 
     class Meta:
         model = Product
-        fields = ['uuid', 'name', 'image', 'category', 'average_rating']
-    
+        fields = ['uuid', 'name', 'description', 'image', 'category', 'product_colors', 'average_rating']
+
     def get_average_rating(self, obj):
         ratings = Rate.objects.filter(product=obj)
         average = ratings.aggregate(models.Avg('score'))['score__avg']
-        return average if average is not None else 0.0 
+        return average if average is not None else 0.0

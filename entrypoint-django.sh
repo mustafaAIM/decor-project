@@ -8,6 +8,7 @@ run_migrations() {
     echo "Running migrations for $app_name..."
     python manage.py makemigrations $app_name --noinput || exit 1
     python manage.py migrate $app_name --noinput || exit 1
+    return 0
 }
 
 # Function to check if migrations are needed
@@ -36,8 +37,8 @@ run_migrations "admin"
 # Feature apps
 run_migrations "section"  # Categories need to exist before products
 run_migrations "product"
-run_migrations "service"
 run_migrations "plan"
+run_migrations "service"
 run_migrations "design"
 run_migrations "cart"
 run_migrations "complaint"
