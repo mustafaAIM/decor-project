@@ -17,7 +17,8 @@ class RateViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from weasyprint import HTML

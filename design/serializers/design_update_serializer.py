@@ -5,6 +5,8 @@ from ..models.desgin_model import Design
 from section.models.category_model import Category
 
 class DesignUpdateSerializer(serializers.ModelSerializer):
+    category = serializers.UUIDField(required=False)
+    
     class Meta:
         model = Design
         fields = ['uuid', 'title', 'description', 'category']

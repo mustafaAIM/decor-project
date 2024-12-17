@@ -7,7 +7,8 @@ from rest_framework.pagination import PageNumberPagination
 from ..models.product_model import Product
 # seializers
 from ..serializers.product_serializer import ProductSerializer
-from ..serializers.product_detail_serialzier import ProductDetailSerializer
+from ..serializers.product_create_serializer import ProductCreateSerializer
+from ..serializers.product_retrive_serialzier import ProductRetrieveSerializer
 from ..filters import ProductFilter
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -25,6 +26,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     lookup_field = 'uuid'
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'create':
+        if self.action == 'list':
             return ProductSerializer
-        return ProductDetailSerializer
+        elif self.action == 'create':
+            return ProductCreateSerializer
+        return ProductRetrieveSerializer
