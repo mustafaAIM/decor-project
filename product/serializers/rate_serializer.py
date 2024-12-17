@@ -3,8 +3,9 @@ from rest_framework import serializers
 # models
 from ..models.rate_model import Rate
 from ..models.product_model import Product
+from customer.models.customer_model import Customer
 # utils
-from utils.api_exceptions import BadRequestError
+from utils.api_exceptions import BadRequestError, AuthenticationError, NotFoundError
 
 class RateSerializer(serializers.ModelSerializer):
     product = serializers.UUIDField()
@@ -15,12 +16,13 @@ class RateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         product_instance = Product.objects.filter(uuid=data["product"]).first()
         if not product_instance:
-            raise BadRequestError(en_message="Product not found.", ar_message="المنتج غير موجود", status_code=404)
+            raise NotFoundError(en_message="Product not found.", ar_message="المنتج غير موجود", status_code=404)
         if not self.context['request'].user:
-            raise BadRequestError(en_message="You Must be logged in to rate products", ar_message="يجب أن تقوم بتسجيل الدخول لتقوم بتفييم المنتجات", status_code=401)
-        if not self.context['request'].user.cutomer:
-            raise BadRequestError(en_message="Only customers can rate products", ar_message="فقط العملاء يمكنهم تقييم المنتجات", status_code=401)
-        if Rate.objects.filter(product=product_instance, customer=self.context['request'].user.customer).exists():
+            raise AuthenticationError(en_message="You Must be logged in to rate products", ar_message="يجب أن تقوم بتسجيل الدخول لتقوم بتفييم المنتجات", status_code=401)
+        print(self.context['request'].user)
+        if not Customer.objects.filter(user=self.context['request'].user).exists():
+            raise AuthenticationError(en_message="Only customers can rate products", ar_message="فقط العملاء يمكنهم تقييم المنتجات", status_code=401)
+        if Rate.objects.filter(product=product_instance, customer=Customer.objects.get(user=self.context['request'].user)).exists():
             raise BadRequestError(en_message="You have already rated this product.", ar_message="لقد قت بالغعل بتفييم هذا المنتج", status_code=400)
         data["product"] = product_instance
         return data

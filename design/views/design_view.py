@@ -77,6 +77,7 @@ class DesignViewSet(viewsets.ModelViewSet):
             )
             
         except serializers.ValidationError as e:
+            print(serializer.errors)
             raise BadRequestError(
                 en_message="Validation error",
                 ar_message="خطأ في التحقق"

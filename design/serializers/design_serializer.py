@@ -86,10 +86,10 @@ class DesignSerializer(serializers.ModelSerializer):
         return design
 
     def validate(self, data):
+        print('1')
         files = data.get('files', [])
         titles = data.get('titles', [])
         is_primary_list = data.get('is_primary', [])
-
         if not files:
             raise BadRequestError(
                 en_message="At least one file is required.",
