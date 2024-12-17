@@ -4,21 +4,19 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import filters
-from rest_framework.response import Response
 from rest_framework import serializers
-from rest_framework.decorators import action
 from rest_framework import status
 # models
 from ..models.desgin_model import Design
-from ..models.design_file_model import DesignFile
 # serializers
 from ..serializers.design_serializer import DesignSerializer
 from ..serializers.design_update_serializer import DesignUpdateSerializer
 from ..serializers.design_file_serialzier import DesignFileSerializer
-from ..serializers.add_file_serializer import AddFileSerializer
 # utils
 from utils.messages import ResponseFormatter
-from utils.api_exceptions import BadRequestError, NotFoundError, APIError
+from utils.api_exceptions import BadRequestError, APIError
+# filters
+from ..filters.design_filter import DesignFilter
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -26,13 +24,13 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 class DesignViewSet(viewsets.ModelViewSet):
-    queryset = Design.objects.all()
+    queryset = Design.objects.all().select_related('category').order_by('title')
     pagination_class = StandardResultsSetPagination
-    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
-    filterset_fields = ['title']
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    filterset_class = DesignFilter
     search_fields = ['title', 'description']
     ordering_fields = ['title', 'uuid']  
-    ordering = ['title']  
+    ordering = ['title'] 
     lookup_field = 'uuid'
 
     def get_serializer_class(self):
@@ -41,7 +39,8 @@ class DesignViewSet(viewsets.ModelViewSet):
         return DesignSerializer
 
     def list(self, request):
-        page = self.paginate_queryset(self.queryset)
+        filtered_queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(filtered_queryset)
         data = []
         for design in page:
             primary_file = design.files.filter(is_primary=True).first()
@@ -49,7 +48,7 @@ class DesignViewSet(viewsets.ModelViewSet):
                 'uuid': design.uuid,
                 'title': design.title,
                 'description': design.description,
-                'category': str(design.category.uuid),
+                'category': design.category.title,
                 'primary_image': primary_file.file.url if primary_file else None
             })
         return self.get_paginated_response(data)
@@ -60,7 +59,7 @@ class DesignViewSet(viewsets.ModelViewSet):
             'uuid': design.uuid,
             'title': design.title,
             'description': design.description,
-            'category': str(design.category.uuid),
+            'category': design.category.title,
             'files': DesignFileSerializer(design.files.all(), many=True).data
         }
         return ResponseFormatter.success_response(data=data)
