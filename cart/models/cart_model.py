@@ -17,6 +17,10 @@ class Cart(models.Model):
         return sum(item.quantity for item in self.items.all())
 
     @property
+    def unique_items(self):
+        return self.items.count()
+
+    @property
     def subtotal(self):
         return sum(item.subtotal for item in self.items.all())
 
