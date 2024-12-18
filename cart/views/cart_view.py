@@ -33,7 +33,10 @@ class CartViewSet(CartMixin, viewsets.ModelViewSet):
     def count(self, request):
         cart = self.get_or_create_cart()
         return ResponseFormatter.success_response(
-            data={'count': cart.total_items}
+            data={
+                'count': cart.unique_items,
+                'total_quantity': cart.total_items
+            }
         )
 
 class CartItemCreateView(CartMixin, generics.CreateAPIView):
