@@ -7,6 +7,8 @@ from cart.serializers import (
     UpdateCartItemSerializer
 )
 from utils.shortcuts import get_object_or_404
+from rest_framework.decorators import action
+from utils import ResponseFormatter
 
 
 class CartMixin:
@@ -26,6 +28,15 @@ class CartListView(CartMixin, generics.ListAPIView):
         cart = self.get_or_create_cart()
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def count(self, request):
+        cart = self.get_or_create_cart()
+        return ResponseFormatter.success_response(
+            data={'count': cart.total_items},
+            message_en="Cart count retrieved successfully",
+            message_ar="تم استرجاع عدد العناصر في السلة بنجاح"
+        )
 
 class CartItemCreateView(CartMixin, generics.CreateAPIView):
     serializer_class = AddToCartSerializer
