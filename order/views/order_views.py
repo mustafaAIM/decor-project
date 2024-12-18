@@ -48,7 +48,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             order = Order.objects.create(
                 customer=request.user.customer,
                 total_amount=0,
-                notes=request.data.get('notes', '')
+                notes=request.data.get('notes', ''),
+                phone=request.data.get('phone',''),
+                email=request.data.get('email',''),
+                address=request.data.get('address',''),
+                city=request.data.get('city',''),
+                postal_code=request.data.get('postal_code','')
             )
             for cart_item in cart.items.all():
                 OrderItem.objects.create(
