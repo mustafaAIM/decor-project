@@ -25,18 +25,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return ResponseFormatter.success_response(
-            data=serializer.data,
-            message_en="Orders retrieved successfully",
-            message_ar="تم استرجاع الطلبات بنجاح"
+            data=serializer.data
         )
 
     @action(detail=False, methods=['get'])
     def count(self, request):
         count = self.get_queryset().count()
         return ResponseFormatter.success_response(
-            data={'count': count},
-            message_en="Order count retrieved successfully",
-            message_ar="تم استرجاع عدد الطلبات بنجاح"
+            data={'count': count}
         )
 
     @transaction.atomic

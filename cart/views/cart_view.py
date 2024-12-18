@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import viewsets, status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from cart.models.cart_model import Cart, CartItem
@@ -18,7 +18,7 @@ class CartMixin:
         cart, _ = Cart.objects.get_or_create(customer=self.request.user.customer)
         return cart
 
-class CartListView(CartMixin, generics.ListAPIView):
+class CartViewSet(CartMixin, viewsets.ModelViewSet):
     serializer_class = CartSerializer
 
     def get_queryset(self):
@@ -33,9 +33,10 @@ class CartListView(CartMixin, generics.ListAPIView):
     def count(self, request):
         cart = self.get_or_create_cart()
         return ResponseFormatter.success_response(
-            data={'count': cart.total_items},
-            message_en="Cart count retrieved successfully",
-            message_ar="تم استرجاع عدد العناصر في السلة بنجاح"
+            data={
+                'count': cart.unique_items,
+                'total_quantity': cart.total_items
+            }
         )
 
 class CartItemCreateView(CartMixin, generics.CreateAPIView):
