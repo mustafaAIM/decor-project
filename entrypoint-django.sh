@@ -12,6 +12,8 @@ run_migrations() {
 }
 
 # Function to check if migrations are needed
+
+
 check_migrations() {
     python manage.py showmigrations | grep -q "\[ \]"
     return $?
@@ -30,24 +32,24 @@ echo "Running migrations in order..."
 # #run_migrations "file_management"
 
 # # Apps that depend on authentication
-# run_migrations "employee"
-# run_migrations "customer"
-# run_migrations "admin"
+run_migrations "employee"
+run_migrations "customer"
+run_migrations "admin"
 
 # # Feature apps
-# run_migrations "section"  # Categories need to exist before products
-# run_migrations "product"
-# run_migrations "plan"
-# run_migrations "service"
-# run_migrations "design"
-# run_migrations "cart"
-# run_migrations "complaint"
-# run_migrations "order"
-# run_migrations "payment"
-# # Final migration check
-# echo "Running any remaining migrations..."
-# python manage.py makemigrations --noinput
-# python manage.py migrate --noinput
+run_migrations "section"  # Categories need to exist before products
+run_migrations "product"
+run_migrations "plan"
+run_migrations "service"
+run_migrations "design"
+run_migrations "cart"
+run_migrations "complaint"
+run_migrations "order"
+run_migrations "payment"
+# Final migration check
+echo "Running any remaining migrations..."
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput
 
 # Verify all migrations are applied
 
