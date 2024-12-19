@@ -38,6 +38,8 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    
+    paid = models.BooleanField(default=False)
 
     @staticmethod
     def calculate_fees(amount, payment_method):
@@ -58,6 +60,13 @@ class Payment(models.Model):
             'fee_amount': total_fee.quantize(Decimal('0.01')),
             'total_amount': (amount + total_fee).quantize(Decimal('0.01'))
         }
+
+    @property
+    def is_paid(self):
+        """
+        Returns True if the payment is completed and verified
+        """
+        return self.status == self.PaymentStatus.COMPLETED and self.paid
 
     class Meta:
         ordering = ['-created_at']
