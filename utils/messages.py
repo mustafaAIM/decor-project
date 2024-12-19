@@ -33,3 +33,14 @@ class ResponseFormatter:
             cls.format_success(data),
             status=status_code
         )
+
+SEARCH_MESSAGES = {
+    'no_results': {
+        'en': 'No products found matching your search criteria.',
+        'ar': 'لم يتم العثور على منتجات تطابق معايير البحث.'
+    },
+    'invalid_search': {
+        'en': 'Invalid search parameters provided.',
+        'ar': 'معايير البحث غير صالحة.'
+    }
+}

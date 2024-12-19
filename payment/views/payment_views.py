@@ -50,7 +50,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     en_message="You don't have permission to pay for this order",
                     ar_message="ليس لديك صلاحية الدفع لهذا الطلب"
                 )
-            amount = order.total_amount
+            base_amount = order.total_amount
         else:
             service_order = get_object_or_404(ServiceOrder, uuid=order_uuid)
             if service_order.customer != request.user.customer:
@@ -58,17 +58,20 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     en_message="You don't have permission to pay for this service",
                     ar_message="ليس لديك صلاحية الدفع لهذه الخدمة"
                 )
-            amount = service_order.amount
+            base_amount = service_order.amount
+
+        amount_details = Payment.calculate_fees(base_amount, payment_method)
 
         try:
             if payment_method == Payment.PaymentMethod.STRIPE:
-                
                 intent = stripe.PaymentIntent.create(
-                    amount=int(amount * 100),
+                    amount=int(amount_details['total_amount'] * 100),  
                     currency='usd',
                     metadata={
                         'order_type': order_type,
-                        'order_uuid': str(order_uuid)
+                        'order_uuid': str(order_uuid),
+                        'base_amount': str(amount_details['base_amount']),
+                        'fee_amount': str(amount_details['fee_amount'])
                     }
                 )
 
@@ -77,7 +80,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         Order if order_type == 'order' else ServiceOrder
                     ),
                     object_id=order_uuid,
-                    amount=amount,
+                    amount=amount_details['total_amount'],
                     payment_method=payment_method,
                     payment_intent_id=intent.id
                 )
@@ -85,6 +88,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 return Response({
                     'client_secret': intent.client_secret,
                     'payment_uuid': payment.uuid,
+                    'amount_details': amount_details,
                     'publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
                 })
 
@@ -94,7 +98,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         Order if order_type == 'order' else ServiceOrder
                     ),
                     object_id=order_uuid,
-                    amount=amount,
+                    amount=amount_details['total_amount'],
                     payment_method=payment_method,
                 )
 
@@ -109,8 +113,12 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     },
                     "transactions": [{
                         "amount": {
-                            "total": str(amount),
-                            "currency": "USD"
+                            "total": str(amount_details['total_amount']),
+                            "currency": "USD",
+                            "details": {
+                                "subtotal": str(amount_details['base_amount']),
+                                "tax": str(amount_details['fee_amount'])
+                            }
                         },
                         "description": f"Payment for {'Order' if order_type == 'order' else 'Service'} {order_uuid}"
                     }]
@@ -126,6 +134,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         'payment_uuid': payment.uuid
                     })
                 else:
+                    print(paypal_payment.error)
                     raise BadRequestError(
                         en_message="Failed to create PayPal payment",
                         ar_message="فشل في إنشاء عملية الدفع عبر باي بال"
@@ -174,3 +183,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 en_message="Payment not found",
                 ar_message="لم يتم العثور على عملية الدفع"
             )
+        
+        except Exception as e:  
+            print(e)
+            raise e

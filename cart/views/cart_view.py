@@ -1,4 +1,4 @@
-from rest_framework import generics, status
+from rest_framework import viewsets, status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from cart.models.cart_model import Cart, CartItem
@@ -7,6 +7,8 @@ from cart.serializers import (
     UpdateCartItemSerializer
 )
 from utils.shortcuts import get_object_or_404
+from rest_framework.decorators import action
+from utils import ResponseFormatter
 
 
 class CartMixin:
@@ -16,7 +18,7 @@ class CartMixin:
         cart, _ = Cart.objects.get_or_create(customer=self.request.user.customer)
         return cart
 
-class CartListView(CartMixin, generics.ListAPIView):
+class CartViewSet(CartMixin, viewsets.ModelViewSet):
     serializer_class = CartSerializer
 
     def get_queryset(self):
@@ -26,6 +28,16 @@ class CartListView(CartMixin, generics.ListAPIView):
         cart = self.get_or_create_cart()
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def count(self, request):
+        cart = self.get_or_create_cart()
+        return ResponseFormatter.success_response(
+            data={
+                'count': cart.unique_items,
+                'total_quantity': cart.total_items
+            }
+        )
 
 class CartItemCreateView(CartMixin, generics.CreateAPIView):
     serializer_class = AddToCartSerializer

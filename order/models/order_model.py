@@ -16,6 +16,14 @@ class Order(models.Model):
     reference_number = models.CharField(max_length=50, unique=True, editable=False)
     order_number = models.CharField(max_length=50, unique=True, editable=False)
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PENDING)
+    
+    # Customer Information
+    phone = models.CharField(max_length=20,null=True,blank=True)
+    email = models.EmailField(null=True,blank=True)
+    address = models.TextField(null=True,blank=True)
+    city = models.CharField(max_length=100,null=True,blank=True)
+    postal_code = models.CharField(max_length=20, blank=True, null=True)
+    
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     notes = models.TextField(blank=True)
     
