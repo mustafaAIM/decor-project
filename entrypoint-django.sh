@@ -12,6 +12,8 @@ run_migrations() {
 }
 
 # Function to check if migrations are needed
+
+
 check_migrations() {
     python manage.py showmigrations | grep -q "\[ \]"
     return $?
@@ -26,7 +28,7 @@ python manage.py migrate --fake-initial
 echo "Running migrations in order..."
 
 # # Base apps (no dependencies)
-run_migrations "authentication"  # User model needs to be first
+# run_migrations "authentication"  # User model needs to be first
 # #run_migrations "file_management"
 
 # # Apps that depend on authentication
@@ -44,10 +46,10 @@ run_migrations "cart"
 run_migrations "complaint"
 run_migrations "order"
 run_migrations "payment"
-# # Final migration check
-# echo "Running any remaining migrations..."
-# python manage.py makemigrations --noinput
-# python manage.py migrate --noinput
+# Final migration check
+echo "Running any remaining migrations..."
+python manage.py makemigrations --noinput
+python manage.py migrate --noinput
 
 # Verify all migrations are applied
 
