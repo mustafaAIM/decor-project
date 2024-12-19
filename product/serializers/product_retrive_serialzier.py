@@ -13,11 +13,10 @@ class ProductRetrieveSerializer(serializers.ModelSerializer):
     product_colors = ProductColorSerializer(source="product_colors.all", many=True)
     average_rating = serializers.SerializerMethodField(read_only=True)
     category = CategorySerializer()
-
     class Meta:
         model = Product
         fields = ['uuid', 'name', 'description', 'image', 'category', 'product_colors', 'average_rating']
-
+    
     def get_average_rating(self, obj):
         ratings = Rate.objects.filter(product=obj)
         average = ratings.aggregate(models.Avg('score'))['score__avg']

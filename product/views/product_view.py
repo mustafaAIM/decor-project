@@ -8,8 +8,12 @@ from ..models.product_model import Product
 # seializers
 from ..serializers.product_serializer import ProductSerializer
 from ..serializers.product_create_serializer import ProductCreateSerializer
+from ..serializers.product_update_serializer import ProductUpdateSerializer
 from ..serializers.product_retrive_serialzier import ProductRetrieveSerializer
 from ..filters import ProductFilter
+# utile
+from utils.messages import ResponseFormatter
+from utils.shortcuts import get_object_or_404
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -30,4 +34,20 @@ class ProductViewSet(viewsets.ModelViewSet):
             return ProductSerializer
         elif self.action == 'create':
             return ProductCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return ProductUpdateSerializer
         return ProductRetrieveSerializer
+
+    def retrieve(self, request, uuid=None):
+        product = get_object_or_404(Product, uuid=uuid)
+        product_design = ProductRetrieveSerializer(product)
+        return ResponseFormatter.success_response(data=product_design.data)
+    
+    def update(self, request, uuid=None, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = get_object_or_404(Product, uuid=uuid)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return ResponseFormatter.success_response(data=serializer.data) 

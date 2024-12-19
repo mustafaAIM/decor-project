@@ -15,6 +15,7 @@ from ..serializers.design_file_serialzier import DesignFileSerializer
 # utils
 from utils.messages import ResponseFormatter
 from utils.api_exceptions import BadRequestError, APIError
+from utils.shortcuts import get_object_or_404
 # filters
 from ..filters.design_filter import DesignFilter
 
@@ -49,18 +50,21 @@ class DesignViewSet(viewsets.ModelViewSet):
                 'title': design.title,
                 'description': design.description,
                 'category': design.category.title,
-                'primary_image': primary_file.file.url if primary_file else None
+                'primary_image': request.build_absolute_uri(primary_file.file.url) if primary_file else None
             })
         return self.get_paginated_response(data)
 
     def retrieve(self, request, uuid=None):
-        design = self.get_object()
+        design = get_object_or_404(Design, uuid=uuid)
+        files_data = DesignFileSerializer(design.files.all(), many=True).data
+        for f in files_data:
+            f['file'] = request.build_absolute_uri(f['file'])
         data = {
             'uuid': design.uuid,
             'title': design.title,
             'description': design.description,
             'category': design.category.title,
-            'files': DesignFileSerializer(design.files.all(), many=True).data
+            'files': files_data
         }
         return ResponseFormatter.success_response(data=data)
 
@@ -88,3 +92,12 @@ class DesignViewSet(viewsets.ModelViewSet):
                 ar_message="حدث خطأ أثناء إنشاء التصميم",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+    def update(self, request, uuid=None, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = get_object_or_404(Design, uuid=uuid)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return ResponseFormatter.success_response(data=serializer.data) 
