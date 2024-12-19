@@ -13,7 +13,7 @@ class ProductColorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductColor
-        fields = ['uuid', 'color', 'price', 'quantity']
+        fields = ['uuid', 'color', 'price', 'quantity', 'image']
 
     def create(self, validated_data):
         color_data = validated_data.pop('color')
