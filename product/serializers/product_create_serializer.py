@@ -4,7 +4,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 # models
 from ..models.product_model import Product
-from ..models.rate_model import Rate
 from section.models.category_model import Category
 # serializers
 from .product_color_serializer import ProductColorSerializer

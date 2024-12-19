@@ -16,14 +16,13 @@ class RateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         product_instance = Product.objects.filter(uuid=data["product"]).first()
         if not product_instance:
-            raise NotFoundError(en_message="Product not found.", ar_message="المنتج غير موجود", status_code=404)
+            raise NotFoundError(en_message="Product not found.", ar_message="المنتج غير موجود")
         if not self.context['request'].user:
-            raise AuthenticationError(en_message="You Must be logged in to rate products", ar_message="يجب أن تقوم بتسجيل الدخول لتقوم بتفييم المنتجات", status_code=401)
-        print(self.context['request'].user)
+            raise AuthenticationError(en_message="You Must be logged in to rate products", ar_message="يجب أن تقوم بتسجيل الدخول لتقوم بتفييم المنتجات")
         if not Customer.objects.filter(user=self.context['request'].user).exists():
-            raise AuthenticationError(en_message="Only customers can rate products", ar_message="فقط العملاء يمكنهم تقييم المنتجات", status_code=401)
+            raise AuthenticationError(en_message="Only customers can rate products", ar_message="فقط العملاء يمكنهم تقييم المنتجات")
         if Rate.objects.filter(product=product_instance, customer=Customer.objects.get(user=self.context['request'].user)).exists():
-            raise BadRequestError(en_message="You have already rated this product.", ar_message="لقد قت بالغعل بتفييم هذا المنتج", status_code=400)
+            raise BadRequestError(en_message="You have already rated this product.", ar_message="لقد قت بالغعل بتفييم هذا المنتج")
         data["product"] = product_instance
         return data
     
