@@ -2,8 +2,11 @@ from rest_framework import serializers
 from django.db.models import Sum, F
 from ..models import Order, OrderItem
 from utils import BadRequestError
+from product.serializers import ProductColorSerializer
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    product_color = ProductColorSerializer(read_only=True)
+    
     class Meta:
         model = OrderItem
         fields = ['uuid', 'product_color', 'quantity', 'unit_price', 'total_price']
@@ -18,7 +21,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         return value
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
+    items = OrderItemSerializer(source='items.all', many=True, read_only=True)
     
     class Meta:
         model = Order
