@@ -41,4 +41,8 @@ class PaymentSerializer(serializers.ModelSerializer):
 class PaymentIntentSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(choices=Payment.PaymentMethod.choices)
     order_type = serializers.ChoiceField(choices=['order', 'service_order'])
-    order_uuid = serializers.UUIDField() 
+    order_uuid = serializers.UUIDField()
+    platform = serializers.ChoiceField(
+        choices=['web', 'ios', 'android'], 
+        required=True
+    ) 
