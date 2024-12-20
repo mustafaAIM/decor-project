@@ -6,10 +6,22 @@ from product.serializers import ProductColorSerializer
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_color = ProductColorSerializer(read_only=True)
+    product_name = serializers.CharField(source='product_color.product.name', read_only=True)
+    product_description = serializers.CharField(source='product_color.product.description', read_only=True)
+    product_image = serializers.ImageField(source='product_color.product.image', read_only=True)
     
     class Meta:
         model = OrderItem
-        fields = ['uuid', 'product_color', 'quantity', 'unit_price', 'total_price']
+        fields = [
+            'uuid', 
+            'product_color',
+            'product_name',
+            'product_description',
+            'product_image',
+            'quantity', 
+            'unit_price', 
+            'total_price'
+        ]
         read_only_fields = ['uuid', 'total_price']
 
     def validate_quantity(self, value):

@@ -147,7 +147,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         "description": f"Payment for {'Order' if order_type == 'order' else 'Service'} {order_uuid}"
                     }]
                 })
-                print(payment)
                 if paypal_payment.create():
                     approval_url = next(link.href for link in paypal_payment.links if link.rel == "approval_url")
                     payment.payment_intent_id = paypal_payment.id
