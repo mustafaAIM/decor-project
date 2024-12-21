@@ -2,11 +2,26 @@ from rest_framework import serializers
 from django.db.models import Sum, F
 from ..models import Order, OrderItem
 from utils import BadRequestError
+from product.serializers import ProductColorSerializer
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    product_color = ProductColorSerializer(read_only=True)
+    product_name = serializers.CharField(source='product_color.product.name', read_only=True)
+    product_description = serializers.CharField(source='product_color.product.description', read_only=True)
+    product_image = serializers.ImageField(source='product_color.product.image', read_only=True)
+    
     class Meta:
         model = OrderItem
-        fields = ['uuid', 'product_color', 'quantity', 'unit_price', 'total_price']
+        fields = [
+            'uuid', 
+            'product_color',
+            'product_name',
+            'product_description',
+            'product_image',
+            'quantity', 
+            'unit_price', 
+            'total_price'
+        ]
         read_only_fields = ['uuid', 'total_price']
 
     def validate_quantity(self, value):
@@ -18,7 +33,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         return value
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, read_only=True)
+    items = OrderItemSerializer(source='items.all', many=True, read_only=True)
     
     class Meta:
         model = Order

@@ -14,7 +14,14 @@ class OrderViewSet(viewsets.ModelViewSet):
     lookup_field = 'uuid'
 
     def get_queryset(self):
-        return Order.objects.filter(customer=self.request.user.customer)
+        return Order.objects.filter(
+            customer=self.request.user.customer
+        ).select_related(
+            'customer'
+        ).prefetch_related(
+            'items__product_color__product',
+            'items__product_color__color'
+        )
 
     def get_serializer_class(self):
         if self.action == 'create':

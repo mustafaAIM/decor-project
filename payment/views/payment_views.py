@@ -16,9 +16,8 @@ from customer.permissions import IsCustomer
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-# Configure PayPal
 paypalrestsdk.configure({
-    "mode": settings.PAYPAL_MODE,  # sandbox or live
+    "mode": settings.PAYPAL_MODE,  
     "client_id": settings.PAYPAL_CLIENT_ID,
     "client_secret": settings.PAYPAL_CLIENT_SECRET
 })
@@ -34,6 +33,31 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payable__customer=self.request.user.customer
         )
 
+    def get_platform_urls(self, platform, payment_uuid):
+        """Helper method to get platform-specific URLs"""
+        if platform == 'web':
+            base_url = settings.PAYPAL_WEB_BASE_URL
+            return {
+                'return_url': f"{base_url}/payment/success/?payment_uuid={payment_uuid}",
+                'cancel_url': f"{base_url}/payment/cancel/"
+            }
+        elif platform == 'ios':
+            scheme = settings.PAYPAL_IOS_URL_SCHEME.rstrip('/')
+            urls = {
+                'return_url': f"{scheme}//payment/success?payment_uuid={payment_uuid}",
+                'cancel_url': f"{scheme}//payment/cancel"
+            }
+            print(urls)
+            return urls
+        elif platform == 'android':
+            scheme = settings.PAYPAL_ANDROID_URL_SCHEME.rstrip('/')
+            urls = {
+                'return_url': f"{scheme}//payment/success?payment_uuid={payment_uuid}",
+                'cancel_url': f"{scheme}//payment/cancel"
+            }
+            print(urls)
+            return urls
+
     @action(detail=False, methods=['post'], url_path='create-intent')
     def create_payment_intent(self, request):
         serializer = PaymentIntentSerializer(data=request.data)
@@ -42,6 +66,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         order_type = serializer.validated_data['order_type']
         order_uuid = serializer.validated_data['order_uuid']
         payment_method = serializer.validated_data['payment_method']
+        platform = serializer.validated_data['platform']
 
         if order_type == 'order':
             order = get_object_or_404(Order, uuid=order_uuid)
@@ -51,6 +76,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     ar_message="ليس لديك صلاحية الدفع لهذا الطلب"
                 )
             base_amount = order.total_amount
+            content_type = ContentType.objects.get_for_model(Order)
+            object_id = order.id
         else:
             service_order = get_object_or_404(ServiceOrder, uuid=order_uuid)
             if service_order.customer != request.user.customer:
@@ -59,6 +86,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     ar_message="ليس لديك صلاحية الدفع لهذه الخدمة"
                 )
             base_amount = service_order.amount
+            content_type = ContentType.objects.get_for_model(ServiceOrder)
+            object_id = service_order.id
 
         amount_details = Payment.calculate_fees(base_amount, payment_method)
 
@@ -76,10 +105,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 )
 
                 payment = Payment.objects.create(
-                    content_type=ContentType.objects.get_for_model(
-                        Order if order_type == 'order' else ServiceOrder
-                    ),
-                    object_id=order_uuid,
+                    content_type=content_type,
+                    object_id=object_id,
                     amount=amount_details['total_amount'],
                     payment_method=payment_method,
                     payment_intent_id=intent.id
@@ -94,13 +121,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
             elif payment_method == Payment.PaymentMethod.PAYPAL:
                 payment = Payment.objects.create(
-                    content_type=ContentType.objects.get_for_model(
-                        Order if order_type == 'order' else ServiceOrder
-                    ),
-                    object_id=order_uuid,
+                    content_type=content_type,
+                    object_id=object_id,
                     amount=amount_details['total_amount'],
                     payment_method=payment_method,
                 )
+
+                platform_urls = self.get_platform_urls(platform, payment.uuid)
 
                 paypal_payment = paypalrestsdk.Payment({
                     "intent": "sale",
@@ -108,8 +135,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         "payment_method": "paypal"
                     },
                     "redirect_urls": {
-                        "return_url": f"{settings.PAYPAL_RETURN_URL}?payment_uuid={payment.uuid}",
-                        "cancel_url": settings.PAYPAL_CANCEL_URL
+                        "return_url": platform_urls['return_url'],
+                        "cancel_url": platform_urls['cancel_url']
                     },
                     "transactions": [{
                         "amount": {
@@ -123,7 +150,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         "description": f"Payment for {'Order' if order_type == 'order' else 'Service'} {order_uuid}"
                     }]
                 })
-
+                print(paypal_payment)
                 if paypal_payment.create():
                     approval_url = next(link.href for link in paypal_payment.links if link.rel == "approval_url")
                     payment.payment_intent_id = paypal_payment.id
@@ -162,11 +189,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payment.save()
 
                 payable = payment.payable
-                if isinstance(payable, Order):
-                    payable.status = Order.OrderStatus.PROCESSING
-                elif isinstance(payable, ServiceOrder):
-                    payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
-                payable.save()
+                if payable is not None:
+                    if isinstance(payable, Order):
+                        payable.status = Order.OrderStatus.PROCESSING
+                    elif isinstance(payable, ServiceOrder):
+                        payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
+                    payable.save()
+                else:
+                    print(f"Warning: No payable found for payment {payment_uuid}")
 
                 return Response({
                     "message": "Payment completed successfully",

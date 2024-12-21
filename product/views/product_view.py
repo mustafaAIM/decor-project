@@ -1,7 +1,5 @@
 # django
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q, F, Value, FloatField
-from django.db.models.functions import Length
 from django.db.models import Min, Max
 # rest
 from rest_framework import viewsets, filters
@@ -91,8 +89,11 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, uuid=None):
         product = get_object_or_404(Product, uuid=uuid)
-        product_design = ProductRetrieveSerializer(product)
-        return ResponseFormatter.success_response(data=product_design.data)
+        serialized_product = ProductRetrieveSerializer(product)
+        product = serialized_product.data
+        for product_color in product['product_colors']:
+            product_color['image'] = request.build_absolute_uri(product_color['image']) if product_color['image'] else None
+        return ResponseFormatter.success_response(data=product)
     
     def update(self, request, uuid=None, *args, **kwargs):
         partial = kwargs.pop('partial', False)

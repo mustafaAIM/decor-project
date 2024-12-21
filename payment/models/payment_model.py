@@ -3,6 +3,7 @@ import uuid
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 
 class Payment(models.Model):
     class PaymentStatus(models.TextChoices):
@@ -24,7 +25,7 @@ class Payment(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.UUIDField()
+    object_id = models.IntegerField()
     payable = GenericForeignKey('content_type', 'object_id')
     
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -38,6 +39,8 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    
+    paid = models.BooleanField(default=False)
 
     @staticmethod
     def calculate_fees(amount, payment_method):
@@ -58,6 +61,13 @@ class Payment(models.Model):
             'fee_amount': total_fee.quantize(Decimal('0.01')),
             'total_amount': (amount + total_fee).quantize(Decimal('0.01'))
         }
+
+    @property
+    def is_paid(self):
+        """
+        Returns True if the payment is completed and verified
+        """
+        return self.status == self.PaymentStatus.COMPLETED and self.paid
 
     class Meta:
         ordering = ['-created_at']
