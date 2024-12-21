@@ -27,11 +27,11 @@ python manage.py migrate --fake-initial
 # Run migrations in dependency order
 echo "Running migrations in order..."
 
-# # Base apps (no dependencies)
-# run_migrations "authentication"  # User model needs to be first
-# #run_migrations "file_management"
+# Base apps (no dependencies)
+run_migrations "authentication"  # User model needs to be first
+#run_migrations "file_management"
 
-# # Apps that depend on authentication
+# Apps that depend on authentication
 run_migrations "employee"
 run_migrations "customer"
 run_migrations "admin"
