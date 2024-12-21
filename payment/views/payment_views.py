@@ -43,17 +43,20 @@ class PaymentViewSet(viewsets.ModelViewSet):
             }
         elif platform == 'ios':
             scheme = settings.PAYPAL_IOS_URL_SCHEME.rstrip('/')
-            print(scheme)
-            return {
+            urls = {
                 'return_url': f"{scheme}//payment/success?payment_uuid={payment_uuid}",
                 'cancel_url': f"{scheme}//payment/cancel"
             }
+            print(urls)
+            return urls
         elif platform == 'android':
             scheme = settings.PAYPAL_ANDROID_URL_SCHEME.rstrip('/')
-            return {
-                'return_url': f"{scheme}/payment/success?payment_uuid={payment_uuid}",
-                'cancel_url': f"{scheme}/payment/cancel"
+            urls = {
+                'return_url': f"{scheme}//payment/success?payment_uuid={payment_uuid}",
+                'cancel_url': f"{scheme}//payment/cancel"
             }
+            print(urls)
+            return urls
 
     @action(detail=False, methods=['post'], url_path='create-intent')
     def create_payment_intent(self, request):
@@ -147,6 +150,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                         "description": f"Payment for {'Order' if order_type == 'order' else 'Service'} {order_uuid}"
                     }]
                 })
+                print(paypal_payment)
                 if paypal_payment.create():
                     approval_url = next(link.href for link in paypal_payment.links if link.rel == "approval_url")
                     payment.payment_intent_id = paypal_payment.id
