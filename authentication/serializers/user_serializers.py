@@ -66,10 +66,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+        user_serializer = UserLoginSerializer(self.user)
+        data['user'] = user_serializer.data
         data['role'] = self.user.role
         return data
-
-
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -107,3 +107,8 @@ class PasswordResetSerializer(serializers.Serializer):
         user = User.objects.get(email=self.validated_data['email'])
         user.password = make_password(self.validated_data['new_password'])
         user.save()
+
+class UserLoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('uuid', 'email', 'first_name', 'last_name', 'phone', 'address', 'role', 'image')
