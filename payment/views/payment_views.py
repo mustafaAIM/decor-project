@@ -217,3 +217,54 @@ class PaymentViewSet(viewsets.ModelViewSet):
         except Exception as e:  
             print(e)
             raise e
+
+    @action(detail=False, methods=['post'], url_path='stripe-success')
+    def stripe_success(self, request):
+        payment_uuid = request.data.get('payment_uuid')
+        
+        try:
+            payment = Payment.objects.get(uuid=payment_uuid)
+            if payment.payable.customer != request.user.customer:
+                raise BadRequestError(
+                    en_message="You don't have permission to complete this payment",
+                    ar_message="ليس لديك صلاحية إتمام هذا الدفع"
+                )
+            
+            payment_intent = stripe.PaymentIntent.retrieve(payment.payment_intent_id)
+            
+            if payment_intent.status == 'succeeded':
+                payment.status = Payment.PaymentStatus.COMPLETED
+                payment.transaction_id = payment_intent.id
+                payment.paid = True
+                payment.save()
+                
+                payable = payment.payable
+                if payable is not None:
+                    if isinstance(payable, Order):
+                        payable.status = Order.OrderStatus.PROCESSING
+                    elif isinstance(payable, ServiceOrder):
+                        payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
+                    payable.save()
+                
+                return Response({
+                    "message": "Payment completed successfully",
+                    "payment_uuid": payment_uuid,
+                    "status": "completed"
+                }, status=status.HTTP_200_OK)
+            else:
+                raise BadRequestError(
+                    en_message="Payment has not been completed",
+                    ar_message="لم يتم إكمال الدفع"
+                )
+                
+        except Payment.DoesNotExist:
+            raise BadRequestError(
+                en_message="Payment not found",
+                ar_message="لم يتم العثور على عملية الدفع"
+            )
+        
+        except stripe.error.StripeError as e:
+            raise BadRequestError(
+                en_message=str(e),
+                ar_message="حدث خطأ في التحقق من الدفع"
+            )
