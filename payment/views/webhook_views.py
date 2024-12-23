@@ -14,14 +14,22 @@ def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     event = None
-    print("SIG HEADER",sig_header)
-
+    
+    # Debug logging
+    print("Webhook received")
+    print("Payload:", payload.decode('utf-8')[:100])  # Print first 100 chars for safety
+    print("Signature Header:", sig_header)
+    print("Webhook Secret (length):", len(settings.STRIPE_WEBHOOK_SECRET))
+    
     try:
         # Verify webhook signature
         event = stripe.Webhook.construct_event(
-            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+            payload, 
+            sig_header, 
+            settings.STRIPE_WEBHOOK_SECRET.strip()  # Ensure no whitespace
         )
-        logger.info(f"Webhook received: {event.type}")
+        logger.info(f"Webhook signature verified successfully")
+        logger.info(f"Webhook event type: {event.type}")
 
         # Handle the event
         if event.type == 'payment_intent.succeeded':
@@ -63,10 +71,14 @@ def stripe_webhook(request):
 
     except ValueError as e:
         logger.error(f"Invalid payload: {str(e)}")
+        print(f"ValueError: {str(e)}")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
         logger.error(f"Invalid signature: {str(e)}")
+        print(f"SignatureVerificationError: {str(e)}")
+        print(f"Expected signature: {settings.STRIPE_WEBHOOK_SECRET}")
         return HttpResponse(status=400)
     except Exception as e:
         logger.error(f"Webhook error: {str(e)}")
+        print(f"General error: {str(e)}")
         return HttpResponse(status=400)
