@@ -6,7 +6,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 class ServiceOrder(models.Model):
     class ServiceStatus(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
-        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        PROCESSING = 'PROCESSING', 'Processing'
         COMPLETED = 'COMPLETED', 'Completed'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
