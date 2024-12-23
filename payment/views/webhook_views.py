@@ -14,71 +14,69 @@ def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     event = None
-    
-    # Debug logging
     print("Webhook received")
-    print("Payload:", payload.decode('utf-8')[:100])  # Print first 100 chars for safety
     print("Signature Header:", sig_header)
     print("Webhook Secret (length):", len(settings.STRIPE_WEBHOOK_SECRET))
     
     try:
-        # Verify webhook signature
+        if isinstance(payload, bytes):
+            payload_str = payload.decode('utf-8')
+        else:
+            payload_str = payload
+
         event = stripe.Webhook.construct_event(
-            payload, 
-            sig_header, 
-            settings.STRIPE_WEBHOOK_SECRET.strip()  # Ensure no whitespace
+            payload,
+            sig_header,
+            settings.STRIPE_WEBHOOK_SECRET
         )
+        
         logger.info(f"Webhook signature verified successfully")
         logger.info(f"Webhook event type: {event.type}")
 
-        # Handle the event
         if event.type == 'payment_intent.succeeded':
-            payment_intent = event.data.object
-            try:
-                payment = Payment.objects.get(payment_intent_id=payment_intent.id)
-                payment.status = Payment.PaymentStatus.COMPLETED
-                payment.transaction_id = payment_intent.id
-                payment.paid = True
-                payment.save()
-                
-                # Update the related order/service status
-                payable = payment.payable
-                if payable:
-                    if hasattr(payable, 'status'):
-                        if hasattr(payable, 'OrderStatus'):
-                            payable.status = payable.OrderStatus.PROCESSING
-                        elif hasattr(payable, 'ServiceStatus'):
-                            payable.status = payable.ServiceStatus.IN_PROGRESS
-                        payable.save()
-                
-                logger.info(f"Payment {payment.uuid} marked as completed")
-            except Payment.DoesNotExist:
-                logger.error(f"Payment not found for payment_intent: {payment_intent.id}")
-                return HttpResponse(status=400)
-
+            handle_successful_payment(event.data.object)
         elif event.type == 'payment_intent.payment_failed':
-            payment_intent = event.data.object
-            try:
-                payment = Payment.objects.get(payment_intent_id=payment_intent.id)
-                payment.status = Payment.PaymentStatus.FAILED
-                payment.save()
-                logger.info(f"Payment {payment.uuid} marked as failed")
-            except Payment.DoesNotExist:
-                logger.error(f"Payment not found for payment_intent: {payment_intent.id}")
-                return HttpResponse(status=400)
+            handle_failed_payment(event.data.object)
 
         return HttpResponse(status=200)
 
     except ValueError as e:
         logger.error(f"Invalid payload: {str(e)}")
-        print(f"ValueError: {str(e)}")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
         logger.error(f"Invalid signature: {str(e)}")
-        print(f"SignatureVerificationError: {str(e)}")
-        print(f"Expected signature: {settings.STRIPE_WEBHOOK_SECRET}")
         return HttpResponse(status=400)
     except Exception as e:
         logger.error(f"Webhook error: {str(e)}")
-        print(f"General error: {str(e)}")
         return HttpResponse(status=400)
+
+def handle_successful_payment(payment_intent):
+    try:
+        payment = Payment.objects.get(payment_intent_id=payment_intent.id)
+        payment.status = Payment.PaymentStatus.COMPLETED
+        payment.transaction_id = payment_intent.id
+        payment.paid = True
+        payment.save()
+        
+        payable = payment.payable
+        if payable and hasattr(payable, 'status'):
+            if hasattr(payable, 'OrderStatus'):
+                payable.status = payable.OrderStatus.PROCESSING
+            elif hasattr(payable, 'ServiceStatus'):
+                payable.status = payable.ServiceStatus.IN_PROGRESS
+            payable.save()
+        
+        logger.info(f"Payment {payment.uuid} marked as completed")
+    except Payment.DoesNotExist:
+        logger.error(f"Payment not found for payment_intent: {payment_intent.id}")
+        raise
+
+def handle_failed_payment(payment_intent):
+    try:
+        payment = Payment.objects.get(payment_intent_id=payment_intent.id)
+        payment.status = Payment.PaymentStatus.FAILED
+        payment.save()
+        logger.info(f"Payment {payment.uuid} marked as failed")
+    except Payment.DoesNotExist:
+        logger.error(f"Payment not found for payment_intent: {payment_intent.id}")
+        raise
