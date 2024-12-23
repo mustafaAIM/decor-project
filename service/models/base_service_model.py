@@ -4,7 +4,7 @@ import uuid
 class BaseService(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
-        ('in_progress', 'In Progress'),
+        ('processing', 'Processing'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     )
