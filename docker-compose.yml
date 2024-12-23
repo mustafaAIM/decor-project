@@ -8,6 +8,8 @@ services:
     command: ./entrypoint-django.sh
     env_file:
       - .env
+    expose:
+      - "8000"
     ports:
       - "8000:8000"
     depends_on:
