@@ -31,6 +31,7 @@ urlpatterns = [
     path("api/v1/", include("design.urls.v1")),
     path("api/v1/", include("order.urls.v1")),
     path("api/v1/", include("payment.urls.v1")),
+    path("api/v1/", include("service.urls.v1")),
 
 ]
 
