@@ -3,12 +3,12 @@ from section.models import Category
 
 class CategoryFilter(filters.FilterSet):
     title = filters.CharFilter(lookup_expr='icontains')
-    section_name = filters.CharFilter(
-        field_name='section__name',
+    section_title = filters.CharFilter(
+        field_name='section__title',
         lookup_expr='icontains',
-        label='Section Name'
+        label='Section Title'
     )
 
     class Meta:
         model = Category
-        fields = ['title', 'section_name']
+        fields = ['title', 'section_title']

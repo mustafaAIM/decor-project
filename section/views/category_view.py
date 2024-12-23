@@ -17,9 +17,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        section_name = self.request.query_params.get('section_name', None)
-        if section_name is not None:
-            queryset = queryset.filter(section__name__icontains=section_name)
+        section_title = self.request.query_params.get('section_title', None)
+        if section_title is not None:
+            queryset = queryset.filter(section__title__icontains=section_title)
         return queryset
 
     def list(self, request, *args, **kwargs):

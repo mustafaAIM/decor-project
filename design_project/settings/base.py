@@ -222,13 +222,26 @@ SIMPLE_JWT = {
 PAYPAL_MODE = 'sandbox'  # Change to 'live' in production
 PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')
 PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET')
+
+# Platform-specific PayPal URLs
+PAYPAL_WEB_BASE_URL = os.getenv('PAYPAL_WEB_BASE_URL', 'http://localhost:3000')
+PAYPAL_IOS_URL_SCHEME = os.getenv('PAYPAL_IOS_URL_SCHEME', 'com.yourapp://')
+PAYPAL_ANDROID_URL_SCHEME = os.getenv('PAYPAL_ANDROID_URL_SCHEME', 'com.yourapp://')
+
+# These can be removed or kept as fallbacks
 PAYPAL_RETURN_URL = os.getenv('PAYPAL_RETURN_URL', 'http://localhost:3000/payment/success')
 PAYPAL_CANCEL_URL = os.getenv('PAYPAL_CANCEL_URL', 'http://localhost:3000/payment/cancel')
+
+# PayPal Mobile Settings
+PAYPAL_IOS_RETURN_URL = os.getenv('PAYPAL_IOS_RETURN_URL', 'https://your-domain.com/ios/payment/success')
+PAYPAL_IOS_CANCEL_URL = os.getenv('PAYPAL_IOS_CANCEL_URL', 'https://your-domain.com/ios/payment/cancel')
+PAYPAL_ANDROID_RETURN_URL = os.getenv('PAYPAL_ANDROID_RETURN_URL', 'https://your-domain.com/android/payment/success')
+PAYPAL_ANDROID_CANCEL_URL = os.getenv('PAYPAL_ANDROID_CANCEL_URL', 'https://your-domain.com/android/payment/cancel')
 
 # Stripe Settings
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
-STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+STRIPE_WEBHOOK_SECRET = 'whsec_lVKiopnJanGoQztOFIRWIvqFxmfMM5tR'
 
 # Specify the ASGI application
 ASGI_APPLICATION = 'design_project.asgi.application'
