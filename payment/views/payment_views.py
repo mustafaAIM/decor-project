@@ -193,7 +193,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     if isinstance(payable, Order):
                         payable.status = Order.OrderStatus.PROCESSING
                     elif isinstance(payable, ServiceOrder):
-                        payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
+                        payable.status = ServiceOrder.ServiceStatus.PROCESSING
                     payable.save()
                 else:
                     print(f"Warning: No payable found for payment {payment_uuid}")
