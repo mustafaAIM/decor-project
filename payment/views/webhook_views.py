@@ -65,7 +65,7 @@ def handle_successful_payment(payment_intent):
             elif hasattr(payable, 'ServiceStatus'):
                 payable.status = payable.ServiceStatus.PROCESSING
             payable.save()
-        logger.info(f"Payment {payable.uuid} {payable.status}marked as completed")
+        logger.info(f"Payment {payable.uuid} {payable.status} marked as completed")
         logger.info(f"Payment {payment.uuid} marked as completed")
     except Payment.DoesNotExist:
         logger.error(f"Payment not found for payment_intent: {payment_intent.id}")
