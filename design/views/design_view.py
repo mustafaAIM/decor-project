@@ -12,10 +12,12 @@ from ..models.desgin_model import Design
 from ..serializers.design_serializer import DesignSerializer
 from ..serializers.design_update_serializer import DesignUpdateSerializer
 from ..serializers.design_file_serialzier import DesignFileSerializer
+from ..serializers.design_create_serializer import DesignCreateSerializer
 # utils
 from utils.messages import ResponseFormatter
 from utils.api_exceptions import BadRequestError, APIError
 from utils.shortcuts import get_object_or_404
+from utils.notification import send_notification
 # filters
 from ..filters.design_filter import DesignFilter
 
@@ -37,6 +39,8 @@ class DesignViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action in ['update', 'partial_update']:
             return DesignUpdateSerializer
+        if self.action == 'create':
+            return DesignCreateSerializer
         return DesignSerializer
 
     def list(self, request):
@@ -67,31 +71,6 @@ class DesignViewSet(viewsets.ModelViewSet):
             'files': files_data
         }
         return ResponseFormatter.success_response(data=data)
-
-    def create(self, request, *args, **kwargs):
-        try:
-            serializer = self.get_serializer(data=request.data, context={'request': request})
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            
-            return ResponseFormatter.success_response(
-                data=serializer.data,
-                status_code=status.HTTP_201_CREATED
-            )
-            
-        except serializers.ValidationError as e:
-            print(serializer.errors)
-            raise BadRequestError(
-                en_message="Validation error",
-                ar_message="خطأ في التحقق"
-            )
-            
-        except Exception as e:
-            raise APIError(
-                en_message="An error occurred while creating the design",
-                ar_message="حدث خطأ أثناء إنشاء التصميم",
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
     
     def update(self, request, uuid=None, *args, **kwargs):
         partial = kwargs.pop('partial', False)

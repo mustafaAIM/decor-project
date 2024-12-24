@@ -66,11 +66,16 @@ echo "Collecting static files..."
 #
 #fi
 
+# Start Gunicorn in the background
 echo "Starting Gunicorn..."
-exec gunicorn design_project.wsgi:application \
+gunicorn design_project.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers 3 \
     --timeout 120 \
     --access-logfile - \
     --error-logfile - \
-    --log-level info
+    --log-level info &
+
+# Start Daphne for WebSocket connections
+echo "Starting Daphne..."
+daphne -p 8001 design_project.asgi:application --bind 0.0.0.0

@@ -58,9 +58,11 @@ INSTALLED_APPS = [
     "design",
     "order",
     "payment",
+    "notification",
     #3rd parties
     "django_filters",
-    "corsheaders"
+    "corsheaders",
+    'channels',
 ]
 
 JAZZMIN_SETTINGS = {
@@ -240,3 +242,16 @@ PAYPAL_ANDROID_CANCEL_URL = os.getenv('PAYPAL_ANDROID_CANCEL_URL', 'https://your
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = 'whsec_lVKiopnJanGoQztOFIRWIvqFxmfMM5tR'
+
+# Specify the ASGI application
+ASGI_APPLICATION = 'design_project.asgi.application'
+
+# Channel layers configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)],
+        },
+    },
+}
