@@ -1,0 +1,1 @@
+from .employee_model import Department, Employee, WorkingHours

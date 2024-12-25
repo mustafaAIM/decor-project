@@ -112,3 +112,24 @@ class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('uuid', 'email', 'first_name', 'last_name', 'phone', 'address', 'role', 'image')
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'uuid',
+            'email',
+            'first_name',
+            'last_name',
+            'phone',
+            'address',
+            'image'
+        )
+        read_only_fields = ('uuid', 'email')
+
+    def update(self, instance, validated_data):
+        if 'image' in validated_data and instance.image:
+            if instance.image:
+                instance.image.delete(save=False)
+        
+        return super().update(instance, validated_data)

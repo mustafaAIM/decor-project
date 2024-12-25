@@ -13,4 +13,5 @@ urlpatterns = [
     path("password-reset-verify/", PasswordResetVerifyOTPView.as_view(), name="password-reset-verify"),
     path("password-reset/", PasswordResetView.as_view(), name="password-reset"),
     path("refresh/", TokenRefreshView.as_view(), name="refresh"),
+    path("profile/", UserProfileView.as_view(), name="user-profile"),
 ]
