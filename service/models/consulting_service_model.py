@@ -1,6 +1,5 @@
 from django.db import models
 from .base_service_model import BaseService
-from section.models import Section
 from employee.models import Employee
 import uuid
 
@@ -10,7 +9,6 @@ class ConsultingService(BaseService):
         ('whatsapp', 'WhatsApp'),
     )
 
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
     consultant = models.ForeignKey(Employee, on_delete=models.CASCADE)
     scheduled_date = models.DateField()
     scheduled_time = models.TimeField()

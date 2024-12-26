@@ -1,10 +1,12 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from ..models.employee_model import Employee, Department
 from ..serializers.employee_serializer import EmployeeSerializer, DepartmentSerializer
 from django.shortcuts import get_object_or_404
 from admin.permissions import IsAdmin
+from utils import ResponseFormatter
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -44,7 +46,17 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     lookup_field = 'uuid'
 
     def get_queryset(self):
-        return Employee.objects.all()
+        queryset = Employee.objects.all()
+        
+        # Get is_consultable filter from query params
+        is_consultable = self.request.query_params.get('is_consultable', None)
+        
+        if is_consultable is not None:
+            # Convert string to boolean
+            is_consultable = is_consultable.lower() == 'true'
+            queryset = queryset.filter(is_consultable=is_consultable)
+        
+        return queryset.select_related('user', 'department').prefetch_related('working_hours')
 
     def get_object(self):
         return get_object_or_404(Employee, uuid=self.kwargs['uuid'])
@@ -71,4 +83,13 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        return Response({"data": serializer.data}) 
+        return Response({"data": serializer.data})
+
+    @action(detail=False, methods=['get'])
+    def consultants(self, request):
+        """
+        Get all consultable employees
+        """
+        consultants = self.get_queryset().filter(is_consultable=True)
+        serializer = self.get_serializer(consultants, many=True)
+        return ResponseFormatter.success_response(data=serializer.data) 
