@@ -1,23 +1,18 @@
 from rest_framework import serializers
 from ..models.consulting_service_model import ConsultingService
-from section.models import Section
 from employee.models import Employee
-from section.serializers import SectionSerializer
 from employee.serializers.employee_serializer import EmployeeSerializer
 from django.utils import timezone
 from datetime import datetime, timedelta
 
 class ConsultingServiceSerializer(serializers.ModelSerializer):
-    section_uuid = serializers.UUIDField(write_only=True)
     consultant_uuid = serializers.UUIDField(write_only=True)
-    section_details = SectionSerializer(source='section', read_only=True)
     consultant_details = EmployeeSerializer(source='consultant', read_only=True)
     
     class Meta:
         model = ConsultingService
         fields = [
             'uuid', 'title', 'description', 'notes',
-            'section_uuid', 'section_details',
             'consultant_uuid', 'consultant_details',
             'scheduled_date', 'scheduled_time', 'duration',
             'method', 'phone_number', 'status',
@@ -40,11 +35,9 @@ class ConsultingServiceSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        section = validated_data.pop('section_uuid')
         consultant = validated_data.pop('consultant_uuid')
         
         consulting_service = ConsultingService.objects.create(
-            section=section,
             consultant=consultant,
             **validated_data
         )
@@ -78,9 +71,3 @@ class ConsultingServiceSerializer(serializers.ModelSerializer):
             return Employee.objects.get(uuid=value, is_consultable=True)
         except Employee.DoesNotExist:
             raise serializers.ValidationError("Consultant not found or not available for consultation")
-
-    def validate_section_uuid(self, value):
-        try:
-            return Section.objects.get(uuid=value)
-        except Section.DoesNotExist:
-            raise serializers.ValidationError("Section not found") 
