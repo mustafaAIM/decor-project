@@ -5,11 +5,13 @@ from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
 from datetime import datetime, timedelta
 from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 from ..models import ConsultingService, ServiceOrder
 from ..serializers.consulting_service_serializer import ConsultingServiceSerializer
 from customer.permissions import IsCustomer
 from employee.models import Employee, WorkingHours
+from django.conf import settings
 
 class ConsultingServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultingServiceSerializer
@@ -38,6 +40,8 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
                 "error": "Invalid consultant_uuid or date format"
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        current_timezone = ZoneInfo(settings.TIME_ZONE)
+
         day_name = date.strftime('%A').lower()
         working_hours = WorkingHours.objects.filter(
             employee=consultant,
@@ -55,20 +59,31 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
 
         busy_periods = []        
         for consultation in existing_consultations:
-            start = datetime.combine(date, consultation.scheduled_time)
+            start = timezone.make_aware(
+                datetime.combine(date, consultation.scheduled_time),
+                timezone=current_timezone
+            )
             end = start + timedelta(minutes=consultation.duration)
             busy_periods.append((start, end))
 
-        available_slots = []
-        current_time = datetime.combine(date, working_hours.from_hour)
-        end_time = datetime.combine(date, working_hours.to_hour)
+        current_time = timezone.make_aware(
+            datetime.combine(date, working_hours.from_hour),
+            timezone=current_timezone
+        )
+        end_time = timezone.make_aware(
+            datetime.combine(date, working_hours.to_hour),
+            timezone=current_timezone
+        )
 
         if date == timezone.now().date():
-            current_time = max(
-                current_time,
-                timezone.now().replace(minute=(timezone.now().minute // duration) * duration + duration)
-            )
+            now = timezone.now()
+            minutes = (now.minute // duration) * duration + duration
+            next_slot = now.replace(minute=minutes, second=0, microsecond=0)
+            if minutes >= 60:
+                next_slot = next_slot.replace(hour=next_slot.hour + 1, minute=minutes % 60)
+            current_time = max(current_time, next_slot)
 
+        available_slots = []
         while current_time + timedelta(minutes=duration) <= end_time:
             slot_end = current_time + timedelta(minutes=duration)
             is_available = True
