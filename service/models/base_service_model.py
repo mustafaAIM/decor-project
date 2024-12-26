@@ -13,6 +13,7 @@ class BaseService(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(null = True , blank= True)
     notes = models.TextField(null=True,blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
