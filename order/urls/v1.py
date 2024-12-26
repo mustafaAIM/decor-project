@@ -1,5 +1,5 @@
 from django.urls import path
-from order.views import OrderViewSet
+from order.views import OrderViewSet, CombinedOrderViewSet
 
 urlpatterns = [
     path('orders/', OrderViewSet.as_view({'get': 'list'}), name='order-list'),
@@ -10,4 +10,5 @@ urlpatterns = [
         'patch': 'partial_update',
         'delete': 'destroy'
     }), name='order-detail'),
+    path('combined-orders/', CombinedOrderViewSet.as_view({'get': 'list'}), name='combined-orders'),
 ] 

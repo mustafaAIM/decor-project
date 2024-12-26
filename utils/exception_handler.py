@@ -6,6 +6,7 @@ from utils.messages import ResponseFormatter
 
 def get_error_message(detail):
     """Extract readable error message from DRF error detail"""
+    print(detail)
     if isinstance(detail, dict):
         # Get the first error message from the dict
         for field, errors in detail.items():
@@ -19,6 +20,7 @@ def get_error_message(detail):
 
 def get_error_details(detail):
     """Extract readable error message and field from DRF error detail"""
+    print(detail)
     if isinstance(detail, dict):
         # Get the first error message from the dict
         for field, errors in detail.items():
@@ -40,6 +42,7 @@ def custom_exception_handler(exc, context):
         status_code = 400
 
     if isinstance(exc, DjangoValidationError):
+        print(exc)
         return ResponseFormatter.error_response(
             en="Validation error",
             ar="خطأ في التحقق",
