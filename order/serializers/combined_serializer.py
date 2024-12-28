@@ -30,34 +30,33 @@ class CombinedOrderSerializer(serializers.Serializer):
 
     def get_address(self, obj):
         data = obj['data']
-        print(data)
         if isinstance(data, Order):
             return data.address
-        return data.address if hasattr(data, 'address') else None
+        return data.service.address if hasattr(data.service, 'address') else None
 
     def get_phone(self, obj):
         data = obj['data']
         if isinstance(data, Order):
             return data.phone
-        return data.phone_number if hasattr(data, 'phone_number') else None
+        return data.service.phone_number if hasattr(data.service, 'phone_number') else None
 
     def get_email(self, obj):
         data = obj['data']
         if isinstance(data, Order):
             return data.email
-        return data.email if hasattr(data, 'email') else None
+        return data.service.email if hasattr(data.service, 'email') else None
 
     def get_city(self, obj):
         data = obj['data']
         if isinstance(data, Order):
             return data.city
-        return data.city if hasattr(data, 'city') else None
+        return data.service.city if hasattr(data.service, 'city') else None
 
     def get_notes(self, obj):
         data = obj['data']
         if isinstance(data, Order):
             return data.notes
-        return data.notes if hasattr(data, 'notes') else None
+        return data.service.notes if hasattr(data.service, 'notes') else None
 
     def get_items(self, obj):
         data = obj['data']

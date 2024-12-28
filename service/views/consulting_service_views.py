@@ -122,7 +122,7 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
             customer=request.user.customer,
             service_number=f"CS-{consulting_service.uuid.hex[:8]}",
             content_type=content_type,
-            object_id=consulting_service.uuid,
+            object_id=consulting_service.id,
             amount=0,
             status=ServiceOrder.ServiceStatus.PENDING
         )

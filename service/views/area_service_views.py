@@ -30,7 +30,7 @@ class AreaServiceViewSet(viewsets.ModelViewSet):
             customer=request.user.customer,
             service_number=f"AS-{area_service.uuid.hex[:8]}",
             content_type=content_type,
-            object_id=area_service.uuid,
+            object_id=area_service.id,
             amount=service_settings.area_service_cost,
             status=ServiceOrder.ServiceStatus.PENDING
         )

@@ -55,7 +55,7 @@ class DesignServiceViewSet(viewsets.ModelViewSet):
             customer=request.user.customer,
             service_number=f"DS-{design_service.uuid.hex[:8]}",
             content_type=content_type,
-            object_id=design_service.uuid,
+            object_id=design_service.id,
             amount=design_service.plan.price,
             status=ServiceOrder.ServiceStatus.PENDING
         )
