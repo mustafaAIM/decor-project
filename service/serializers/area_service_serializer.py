@@ -6,7 +6,7 @@ class AreaServiceSerializer(serializers.ModelSerializer):
         model = AreaService
         fields = [
             'uuid', 'title', 'description', 'notes',
-            'phone_number', 'email', 'address',
+            'phone_number', 'email', 'address','city',
             'status', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'status', 'title'] 
