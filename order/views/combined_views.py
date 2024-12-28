@@ -14,6 +14,7 @@ class CombinedOrderViewSet(ViewSet):
     permission_classes = [IsCustomer]
 
     def list(self, request):
+        # Get regular orders
         orders = Order.objects.filter(
             customer=request.user.customer
         ).select_related(
@@ -23,6 +24,7 @@ class CombinedOrderViewSet(ViewSet):
             'items__product_color__color'
         )
 
+        # Get service orders
         service_orders = ServiceOrder.objects.filter(
             customer=request.user.customer
         ).select_related(
@@ -30,23 +32,27 @@ class CombinedOrderViewSet(ViewSet):
             'content_type'
         )
 
+        # Combine and sort both types of orders
         combined_orders = sorted(
             chain(orders, service_orders),
             key=attrgetter('created_at'),
             reverse=True
         )
 
+        # Prepare the data with simplified type information
         serialized_data = []
         for item in combined_orders:
             if isinstance(item, Order):
                 data = {
-                    'type': 'product_order',
+                    'uuid': item.uuid,
+                    'type': 'order',
                     'data': item,
                     'created_at': item.created_at
                 }
-            else:  
+            else:  # ServiceOrder
                 data = {
-                    'type': f'service_order_{item.content_type.model}',
+                    'uuid': item.uuid,
+                    'type': 'service',
                     'data': item,
                     'created_at': item.created_at
                 }
