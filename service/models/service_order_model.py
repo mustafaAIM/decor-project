@@ -15,7 +15,7 @@ class ServiceOrder(models.Model):
     service_number = models.CharField(max_length=50, unique=True)
     
     content_type = models.ForeignKey('contenttypes.ContentType', on_delete=models.CASCADE)
-    object_id = models.UUIDField()
+    object_id = models.PositiveIntegerField()
     service = GenericForeignKey('content_type', 'object_id')
     
     status = models.CharField(max_length=20, choices=ServiceStatus.choices, default=ServiceStatus.PENDING)
