@@ -6,6 +6,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from utils.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from product.models import ProductColor
+from utils import BadRequestError
 
 from ..models import Payment
 from ..serializers.payment_serializers import PaymentSerializer, PaymentIntentSerializer
@@ -58,6 +61,23 @@ class PaymentViewSet(viewsets.ModelViewSet):
             print(urls)
             return urls
 
+    def validate_order_quantities(self, order):
+        """Validate that all items have sufficient quantity"""
+        for item in order.items.all():
+            product_color = item.product_color
+            if product_color.quantity < item.quantity:
+                raise BadRequestError(
+                    en_message=f"Not enough stock for {product_color.product.name} ({product_color.color.name}). Available: {product_color.quantity}",
+                    ar_message=f"الكمية المتوفرة غير كافية {product_color.product.name} ({product_color.color.name}). المتوفر: {product_color.quantity}"
+                )
+
+    def decrement_quantities(self, order):
+        """Decrement quantities after successful payment"""
+        for item in order.items.all():
+            product_color = item.product_color
+            product_color.quantity -= item.quantity
+            product_color.save()
+
     @action(detail=False, methods=['post'], url_path='create-intent')
     def create_payment_intent(self, request):
         serializer = PaymentIntentSerializer(data=request.data)
@@ -75,6 +95,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     en_message="You don't have permission to pay for this order",
                     ar_message="ليس لديك صلاحية الدفع لهذا الطلب"
                 )
+            self.validate_order_quantities(order)
             base_amount = order.total_amount
             content_type = ContentType.objects.get_for_model(Order)
             object_id = order.id
@@ -218,6 +239,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
             print(e)
             raise e
 
+    @transaction.atomic
     @action(detail=False, methods=['post'], url_path='stripe-success')
     def stripe_success(self, request):
         payment_uuid = request.data.get('payment_uuid')
@@ -241,6 +263,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payable = payment.payable
                 if payable is not None:
                     if isinstance(payable, Order):
+                        # Decrement quantities for order items
+                        self.decrement_quantities(payable)
                         payable.status = Order.OrderStatus.PROCESSING
                     elif isinstance(payable, ServiceOrder):
                         payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
