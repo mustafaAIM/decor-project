@@ -16,14 +16,14 @@ class CombinedOrderSerializer(serializers.Serializer):
     city = serializers.SerializerMethodField()
     notes = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
 
     def get_type(self, obj):
         data = obj['data']
         if isinstance(data, Order):
             return 'order'
         if isinstance(data, dict):  # For implementation and supervision services
-            return obj['type']  # We already set this in the view
-        # Get the actual model name for service orders
+            return obj['type']  
         return data.content_type.model
 
     def get_paid(self, obj):
@@ -97,3 +97,11 @@ class CombinedOrderSerializer(serializers.Serializer):
         if isinstance(data, Order):
             return OrderItemSerializer(data.items.all(), many=True).data
         return None 
+
+    def get_amount(self, obj):
+        data = obj['data']
+        if isinstance(data, Order):
+            return float(data.total_amount)
+        if isinstance(data, dict):  
+            return 0  
+        return float(data.amount) if hasattr(data, 'amount') else 0 
