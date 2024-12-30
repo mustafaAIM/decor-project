@@ -24,31 +24,12 @@ class DesignServiceViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        area_files = request.FILES.getlist('area_file', [])
-        inspiration_files = request.FILES.getlist('inspiration_files', [])
-        
-        if not area_files:
-            raise BadRequestError(
-                en_message="At least one area file is required",
-                ar_message="مطلوب ملف واحد على الأقل للمساحة"
-            )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        design_service = serializer.save(user=request.user)
-
-        for file in area_files:
-            DesignServiceFile.objects.create(
-                service=design_service,
-                file=file,
-                file_type='area_file'
-            )
-
-        for file in inspiration_files:
-            DesignServiceFile.objects.create(
-                service=design_service,
-                file=file,
-                file_type='inspiration'
-            )
+        design_service = serializer.save(
+            user=request.user,
+            title="Design Service"
+        )
         
         content_type = ContentType.objects.get_for_model(DesignService)
         service_order = ServiceOrder.objects.create(
@@ -56,13 +37,23 @@ class DesignServiceViewSet(viewsets.ModelViewSet):
             service_number=f"DS-{design_service.uuid.hex[:8]}",
             content_type=content_type,
             object_id=design_service.id,
-            amount=design_service.plan.price,
+            amount=design_service.plan.price * design_service.area,
             status=ServiceOrder.ServiceStatus.PENDING
         )
 
-        return Response({
-            'service_order_uuid': service_order.uuid
-        }, status=status.HTTP_201_CREATED)
+        response_data = {
+            'uuid': service_order.uuid,
+            'reference_number': service_order.service_number,
+            'customer': service_order.customer.id,
+            'order_number': service_order.service_number,
+            'status': service_order.status,
+            'total_amount': float(service_order.amount),
+            'notes': service_order.notes,
+            'isPaid': False,
+            'type': 'designservice'
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def add_files(self, request, uuid=None):

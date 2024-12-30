@@ -24,6 +24,7 @@ class AreaServiceViewSet(viewsets.ModelViewSet):
             user=request.user,
             title="Area Service"
         )
+        
         service_settings = ServiceSettings.get_settings()
         content_type = ContentType.objects.get_for_model(AreaService)
         service_order = ServiceOrder.objects.create(
@@ -35,6 +36,16 @@ class AreaServiceViewSet(viewsets.ModelViewSet):
             status=ServiceOrder.ServiceStatus.PENDING
         )
 
-        return Response({
-            'service_order_uuid': service_order.uuid
-        }, status=status.HTTP_201_CREATED) 
+        response_data = {
+            'uuid': service_order.uuid,
+            'reference_number': service_order.service_number,
+            'customer': service_order.customer.id,
+            'order_number': service_order.service_number,
+            'status': service_order.status,
+            'total_amount': float(service_order.amount),
+            'notes': service_order.notes,
+            'paid': False,
+            'type': 'areaservice'
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED) 
