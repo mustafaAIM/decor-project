@@ -1,6 +1,5 @@
 # filters
 from django_filters import rest_framework as django_filters
-from django.core.exceptions import ValidationError
 import uuid
 from utils.api_exceptions import BadRequestError
 
@@ -27,10 +26,8 @@ class UUIDInFilter(django_filters.UUIDFilter):
 
 class ProductFilter(django_filters.FilterSet):
     category = UUIDInFilter(field_name='category__uuid')
-    # category_title = django_filters.CharFilter(field_name='category__title', lookup_expr='icontains')
-    # min_price = django_filters.NumberFilter(field_name='product_colors__price', lookup_expr='gte')
-    # max_price = django_filters.NumberFilter(field_name='product_colors__price', lookup_expr='lte')
+    section = django_filters.UUIDFilter(field_name='category__section__uuid')
     
     class Meta:
         model = Product
-        fields = ['category']
+        fields = ['category', 'section']

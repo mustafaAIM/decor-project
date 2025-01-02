@@ -16,6 +16,7 @@ from ..filters import ProductFilter
 from ..utils.search import AdvancedSearchFilter
 from utils.messages import ResponseFormatter
 from utils.shortcuts import get_object_or_404
+from utils.notification import send_notification
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'

@@ -32,7 +32,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_ENV') == 'development'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # For development only. In production, specify your domains.
 
 
 # Application definition
@@ -251,7 +251,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('redis', 6379)],
+            "hosts": [(os.getenv('REDIS_HOST', 'redis'), 6379)],
         },
     },
 }
