@@ -5,6 +5,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import logging
 from ..models import Payment
+from django.db import transaction
+from order.models.order_model import Order
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +52,7 @@ def stripe_webhook(request):
         logger.error(f"Webhook error: {str(e)}")
         return HttpResponse(status=400)
 
+@transaction.atomic
 def handle_successful_payment(payment_intent):
     try:
         payment = Payment.objects.get(payment_intent_id=payment_intent.id)
@@ -60,7 +63,11 @@ def handle_successful_payment(payment_intent):
         
         payable = payment.payable
         if payable and hasattr(payable, 'status'):
-            if hasattr(payable, 'OrderStatus'):
+            if isinstance(payable, Order):
+                for item in payable.items.all():
+                    product_color = item.product_color
+                    product_color.quantity -= item.quantity
+                    product_color.save()
                 payable.status = payable.OrderStatus.PROCESSING
             elif hasattr(payable, 'ServiceStatus'):
                 payable.status = payable.ServiceStatus.PROCESSING

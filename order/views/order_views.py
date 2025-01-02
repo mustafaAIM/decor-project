@@ -1,12 +1,15 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from django.db import transaction
-from django.db.models import Sum, F, Count
+from django.db.models import Sum, F, Count, Q
 from ..models import Order, OrderItem
 from ..serializers.order_serializers import OrderSerializer, OrderCreateSerializer
 from cart.models import Cart
 from utils import ResponseFormatter, BadRequestError, NotFoundError
 from rest_framework.response import Response
+from service.models import ServiceOrder
+from service.models.impementaion_service_model import ImplementaionService
+from service.models.supervision_service_model import SupervisionService
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -37,9 +40,32 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def count(self, request):
-        count = self.get_queryset().count()
+        pending_orders = self.get_queryset().filter(
+            status=Order.OrderStatus.PENDING
+        ).count()
+
+        pending_service_orders = ServiceOrder.objects.filter(
+            customer=request.user.customer,
+            status=ServiceOrder.ServiceStatus.PENDING
+        ).count()
+
+        pending_implementation = ImplementaionService.objects.filter(
+            customer=request.user.customer
+        ).count()
+
+        pending_supervision = SupervisionService.objects.filter(
+            customer=request.user.customer
+        ).count()
+
+        total_pending = (
+            pending_orders + 
+            pending_service_orders + 
+            pending_implementation + 
+            pending_supervision
+        )
+
         return ResponseFormatter.success_response(
-            data={'count': count}
+            data={'count': total_pending}
         )
 
     @transaction.atomic

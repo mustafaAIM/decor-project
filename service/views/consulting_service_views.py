@@ -6,12 +6,14 @@ from django.contrib.contenttypes.models import ContentType
 from datetime import datetime, timedelta
 from django.utils import timezone
 from zoneinfo import ZoneInfo
+from decimal import Decimal
 
 from ..models import ConsultingService, ServiceOrder
 from ..serializers.consulting_service_serializer import ConsultingServiceSerializer
 from customer.permissions import IsCustomer
 from employee.models import Employee, WorkingHours
 from django.conf import settings
+from ..models.service_settings_model import ServiceSettings
 
 class ConsultingServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultingServiceSerializer
@@ -117,16 +119,36 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
             user=request.user,
             title="Consulting Service"
         )
+        
+        # Get duration in minutes from the validated data
+        duration_minutes = serializer.validated_data.get('duration', 60)
+        
+        # Get service settings for hourly rate
+        service_settings = ServiceSettings.get_settings()
+        
+        # Calculate amount: (duration_minutes / 60) * hourly_rate
+        amount = Decimal(duration_minutes) / Decimal('60.0') * service_settings.consulting_hourly_rate
+        
         content_type = ContentType.objects.get_for_model(ConsultingService)
         service_order = ServiceOrder.objects.create(
             customer=request.user.customer,
             service_number=f"CS-{consulting_service.uuid.hex[:8]}",
             content_type=content_type,
-            object_id=consulting_service.uuid,
-            amount=0,
+            object_id=consulting_service.id,
+            amount=amount,
             status=ServiceOrder.ServiceStatus.PENDING
         )
 
-        return Response({
-            'service_order_uuid': service_order.uuid
-        }, status=status.HTTP_201_CREATED) 
+        response_data = {
+            'uuid': service_order.uuid,
+            'reference_number': service_order.service_number,
+            'customer': service_order.customer.id,
+            'order_number': service_order.service_number,
+            'status': service_order.status,
+            'total_amount': float(service_order.amount),
+            'notes': service_order.notes,
+            'paid': False,
+            'type': 'consultingservice'
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED) 

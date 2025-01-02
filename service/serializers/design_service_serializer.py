@@ -33,7 +33,7 @@ class DesignServiceSerializer(serializers.ModelSerializer):
             'section_uuid', 'section', 'section_details',
             'area', 'plan_uuid', 'plan', 'plan_details',
             'prefered_colors', 'prefered_colors_details',
-            'phone_number', 'email', 'address',
+            'phone_number', 'email', 'address','city',
             'status', 'created_at', 'updated_at',
             'files'
         ]
