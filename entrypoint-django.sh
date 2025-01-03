@@ -20,7 +20,7 @@ check_migrations() {
 }
 
 
-# Clear any pending migrations first
+# # Clear any pending migrations first
 # echo "Checking for conflicting migrations..."
 # python manage.py migrate --fake-initial
 

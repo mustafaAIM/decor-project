@@ -25,6 +25,7 @@ class ProductColorSerializer(serializers.ModelSerializer):
         if value < 0:
             raise BadRequestError(en_message="Price must be a positive number.", ar_message="السعر يجب أن يكون قيمة موجبة", status_code=400)
         return value
+
     def validate_quantity(self, value):
         if value < 0:
             raise BadRequestError(en_message="Quantity must be a positive number.", ar_message="الكمية يجب أن تكون قيمة موجبة", status_code=400)
