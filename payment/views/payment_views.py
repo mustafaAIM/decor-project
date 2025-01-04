@@ -9,6 +9,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from product.models import ProductColor
 from utils import BadRequestError
+from utils.notification import notify_admins
+from django.utils.translation import gettext as _
 
 from ..models import Payment
 from ..serializers.payment_serializers import PaymentSerializer, PaymentIntentSerializer
@@ -213,8 +215,16 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 if payable is not None:
                     if isinstance(payable, Order):
                         payable.status = Order.OrderStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New order payment received: {payable.order_number} - Amount: ${payment.amount}"
+                        )
                     elif isinstance(payable, ServiceOrder):
                         payable.status = ServiceOrder.ServiceStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New service payment received: {payable.service_number} - Amount: ${payment.amount}"
+                        )
                     payable.save()
                 else:
                     print(f"Warning: No payable found for payment {payment_uuid}")
@@ -263,11 +273,18 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payable = payment.payable
                 if payable is not None:
                     if isinstance(payable, Order):
-                        # Decrement quantities for order items
                         self.decrement_quantities(payable)
                         payable.status = Order.OrderStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New order payment received: {payable.order_number} - Amount: ${payment.amount}"
+                        )
                     elif isinstance(payable, ServiceOrder):
-                        payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
+                        payable.status = ServiceOrder.ServiceStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New service payment received: {payable.service_number} - Amount: ${payment.amount}"
+                        )
                     payable.save()
                 
                 return Response({
