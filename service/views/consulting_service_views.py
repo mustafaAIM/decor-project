@@ -120,13 +120,10 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
             title="Consulting Service"
         )
         
-        # Get duration in minutes from the validated data
         duration_minutes = serializer.validated_data.get('duration', 60)
         
-        # Get service settings for hourly rate
         service_settings = ServiceSettings.get_settings()
         
-        # Calculate amount: (duration_minutes / 60) * hourly_rate
         amount = Decimal(duration_minutes) / Decimal('60.0') * service_settings.consulting_hourly_rate
         
         content_type = ContentType.objects.get_for_model(ConsultingService)
