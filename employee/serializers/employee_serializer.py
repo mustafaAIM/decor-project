@@ -23,14 +23,18 @@ class EmployeeUserSerializer(UserProfileSerializer):
         fields = UserProfileSerializer.Meta.fields + ('email',)
         read_only_fields = ('uuid',)
 
-    def validate_email(self, value):
-        if self.instance is None:
-            if User.objects.filter(email=value).exists():
-                raise BadRequestError(
-                    en_message="Email is already registered.",
-                    ar_message="البريد الإلكتروني مسجل بالفعل."
-                )
-        return value
+    def update(self, instance, validated_data):
+        email = validated_data.pop('email', None)
+        
+        # Update user fields using parent serializer
+        instance = super().update(instance, validated_data)
+        
+        # Update email separately if provided
+        if email is not None:
+            instance.email = email
+            instance.save()
+            
+        return instance
 
 class EmployeeSerializer(serializers.ModelSerializer):
     user = EmployeeUserSerializer()
@@ -68,15 +72,14 @@ class EmployeeSerializer(serializers.ModelSerializer):
         user_data = validated_data.pop('user', None)
         working_hours_data = validated_data.pop('working_hours', None)
         department_uuid = validated_data.pop('department_uuid', None)
+
         if user_data:
-            email = user_data.pop('email', None)
-            user_serializer = UserProfileSerializer(User.objects.get(email = email), data=user_data, partial=True)
+            user_serializer = EmployeeUserSerializer(
+                instance.user,
+                data=user_data,
+                partial=True
+            )
             user_serializer.is_valid(raise_exception=True)
-            if User.objects.filter(email=email).exclude(uuid = user_data.get("uuid")).exists():
-                raise BadRequestError(
-                    en_message="Email is already registered.",
-                    ar_message="البريد الإلكتروني مسجل بالفعل."
-                )
             user_serializer.save()
 
         if department_uuid:
