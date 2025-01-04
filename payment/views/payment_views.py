@@ -196,6 +196,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 ar_message="حدث خطأ في معالجة الدفع"
             )
 
+    @transaction.atomic
     @action(detail=False, methods=['get'], url_path='paypal-success')
     def paypal_success(self, request):
         payment_uuid = request.query_params.get('payment_uuid')
@@ -214,6 +215,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payable = payment.payable
                 if payable is not None:
                     if isinstance(payable, Order):
+                        self.decrement_quantities(payable)
                         payable.status = Order.OrderStatus.PROCESSING
                         notify_admins(
                             sender=request.user,
