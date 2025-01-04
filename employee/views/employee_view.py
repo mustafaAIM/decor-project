@@ -6,7 +6,9 @@ from ..models.employee_model import Employee, Department
 from ..serializers.employee_serializer import EmployeeSerializer, DepartmentSerializer
 from django.shortcuts import get_object_or_404
 from admin.permissions import IsAdmin
-from utils import ResponseFormatter
+from utils import ResponseFormatter, BadRequestError
+from django.db.models import Q
+from authentication.models import User
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -47,15 +49,10 @@ class EmployeeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Employee.objects.all()
-        
-        # Get is_consultable filter from query params
         is_consultable = self.request.query_params.get('is_consultable', None)
-        
         if is_consultable is not None:
-            # Convert string to boolean
             is_consultable = is_consultable.lower() == 'true'
             queryset = queryset.filter(is_consultable=is_consultable)
-        
         return queryset.select_related('user', 'department').prefetch_related('working_hours')
 
     def get_object(self):
@@ -80,6 +77,17 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
+        if 'user' in request.data and 'email' in request.data['user']:
+            email = request.data['user']['email']
+            if User.objects.filter(
+                ~Q(id=instance.user.id),  
+                email=email
+            ).exists():
+                print(instance.user.first_name , instance.user.id , instance.user.email)
+                raise BadRequestError(
+                    en_message="Email is already registered.",
+                    ar_message="البريد الإلكتروني مسجل بالفعل."
+                )
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
