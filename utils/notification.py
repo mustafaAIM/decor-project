@@ -1,6 +1,7 @@
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from notification.models.notification_model import Notification
+from django.contrib.auth import get_user_model
 
 def send_notification(sender, receiver, message):
     # Create a notification record in the database
@@ -20,3 +21,15 @@ def send_notification(sender, receiver, message):
             'notification': message
         }
     )
+
+def notify_admins(sender, message):
+    """Helper function to send notifications to all admin users"""
+    User = get_user_model()
+    admin_users = User.objects.filter(role=User.Roles.ADMIN)
+    
+    for admin in admin_users:
+        send_notification(
+            sender=sender,
+            receiver=admin,
+            message=message
+        )
