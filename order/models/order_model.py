@@ -3,6 +3,8 @@ from django.conf import settings
 import uuid
 from customer.models import Customer
 from datetime import datetime
+from django.contrib.contenttypes.fields import GenericRelation
+from payment.models import Payment
 
 class Order(models.Model):
     class OrderStatus(models.TextChoices):
@@ -10,6 +12,7 @@ class Order(models.Model):
         PROCESSING = 'PROCESSING', 'Processing'
         COMPLETED = 'COMPLETED', 'Completed'
         CANCELLED = 'CANCELLED', 'Cancelled'
+        REFUNDED = 'REFUNDED', 'Refunded'
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
@@ -29,6 +32,8 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    
+    payments = GenericRelation(Payment)
 
     def save(self, *args, **kwargs):
         if not self.reference_number:

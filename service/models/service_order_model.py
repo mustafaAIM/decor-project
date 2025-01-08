@@ -1,7 +1,8 @@
 from django.db import models
 import uuid
 from customer.models import Customer
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from payment.models import Payment
 
 class ServiceOrder(models.Model):
     class ServiceStatus(models.TextChoices):
@@ -9,6 +10,7 @@ class ServiceOrder(models.Model):
         PROCESSING = 'PROCESSING', 'Processing'
         COMPLETED = 'COMPLETED', 'Completed'
         CANCELLED = 'CANCELLED', 'Cancelled'
+        REFUNDED = 'REFUNDED', 'Refunded'
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
@@ -25,6 +27,8 @@ class ServiceOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    
+    payments = GenericRelation(Payment)
 
     class Meta:
         ordering = ['-created_at'] 

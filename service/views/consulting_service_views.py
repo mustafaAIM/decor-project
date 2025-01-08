@@ -4,15 +4,11 @@ from rest_framework.response import Response
 from django.db import transaction
 from django.contrib.contenttypes.models import ContentType
 from datetime import datetime, timedelta
-from django.utils import timezone
-from zoneinfo import ZoneInfo
 from decimal import Decimal
-
 from ..models import ConsultingService, ServiceOrder
 from ..serializers.consulting_service_serializer import ConsultingServiceSerializer
 from customer.permissions import IsCustomer
 from employee.models import Employee, WorkingHours
-from django.conf import settings
 from ..models.service_settings_model import ServiceSettings
 
 class ConsultingServiceViewSet(viewsets.ModelViewSet):
@@ -42,8 +38,6 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
                 "error": "Invalid consultant_uuid or date format"
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        current_timezone = ZoneInfo(settings.TIME_ZONE)
-
         day_name = date.strftime('%A').lower()
         working_hours = WorkingHours.objects.filter(
             employee=consultant,
@@ -51,7 +45,10 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
         ).first()
 
         if not working_hours:
-            return Response({"slots": []})
+            return Response({
+                "slots": [],
+                "message": f"No working hours defined for {day_name}"
+            })
 
         existing_consultations = ConsultingService.objects.filter(
             consultant=consultant,
@@ -61,45 +58,43 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
 
         busy_periods = []        
         for consultation in existing_consultations:
-            start = timezone.make_aware(
-                datetime.combine(date, consultation.scheduled_time),
-                timezone=current_timezone
-            )
+            start = datetime.combine(date, consultation.scheduled_time)
             end = start + timedelta(minutes=consultation.duration)
             busy_periods.append((start, end))
 
-        current_time = timezone.make_aware(
-            datetime.combine(date, working_hours.from_hour),
-            timezone=current_timezone
-        )
-        end_time = timezone.make_aware(
-            datetime.combine(date, working_hours.to_hour),
-            timezone=current_timezone
-        )
+        current_time = datetime.combine(date, working_hours.from_hour)
+        end_time = datetime.combine(date, working_hours.to_hour)
 
-        if date == timezone.now().date():
-            now = timezone.now()
-            minutes = (now.minute // duration) * duration + duration
-            next_slot = now.replace(minute=minutes, second=0, microsecond=0)
-            if minutes >= 60:
-                next_slot = next_slot.replace(hour=next_slot.hour + 1, minute=minutes % 60)
+        if date == datetime.now().date():
+            now = datetime.now()
+            total_minutes = ((now.minute // duration) + 1) * duration
+            hours_to_add = total_minutes // 60
+            remaining_minutes = total_minutes % 60
+            
+            next_slot = now.replace(minute=0, second=0, microsecond=0)
+            if hours_to_add > 0:
+                next_slot = next_slot.replace(hour=now.hour + hours_to_add)
+            next_slot = next_slot.replace(minute=remaining_minutes)
+            
             current_time = max(current_time, next_slot)
 
         available_slots = []
         while current_time + timedelta(minutes=duration) <= end_time:
             slot_end = current_time + timedelta(minutes=duration)
             is_available = True
-
             for busy_start, busy_end in busy_periods:
-                if current_time < busy_end and slot_end > busy_start:
+                if (current_time >= busy_start and current_time < busy_end) or \
+                   (slot_end > busy_start and slot_end <= busy_end) or \
+                   (current_time <= busy_start and slot_end >= busy_end):
                     is_available = False
-                    current_time = busy_end
+                    current_time = busy_end  
                     break
                       
             if is_available:
                 available_slots.append({
                     'time': current_time.strftime('%H:%M'),
-                    'end_time': slot_end.strftime('%H:%M')
+                    'end_time': slot_end.strftime('%H:%M'),
+                    'duration': duration
                 })
                 current_time += timedelta(minutes=duration)
             
@@ -108,7 +103,14 @@ class ConsultingServiceViewSet(viewsets.ModelViewSet):
             "working_hours": {
                 "from": working_hours.from_hour.strftime('%H:%M'),
                 "to": working_hours.to_hour.strftime('%H:%M')
-            }
+            },
+            "date": date_str,
+            "busy_periods": [ 
+                {
+                    "start": bp[0].strftime('%H:%M'),
+                    "end": bp[1].strftime('%H:%M')
+                } for bp in busy_periods
+            ]
         })
 
     @transaction.atomic
