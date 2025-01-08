@@ -9,6 +9,7 @@ from django.db import transaction
 from order.models.order_model import Order
 from utils.notification import notify_admins
 from django.utils.translation import gettext as _
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ def handle_successful_payment(payment_intent):
         payment.status = Payment.PaymentStatus.COMPLETED
         payment.transaction_id = payment_intent.id
         payment.paid = True
+        payment.completed_at = timezone.now()
         payment.save()
         
         payable = payment.payable
