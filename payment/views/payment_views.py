@@ -391,7 +391,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
             notify_admins(
                 sender=request.user,
-                message=f"Refund processed for {payment.payment_method}: {payable.__class__.__name__} {payable.reference_number} - Amount: ${payment.amount}"
+                message=f"Refund processed for {payment.payment_method}: {payable.__class__.__name__} {payable.service_number if isinstance(payable, ServiceOrder) else payable.order_number} - Amount: ${payment.amount}"
             )
 
             return Response({
