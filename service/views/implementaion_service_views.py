@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
 # django
 from django.db import transaction
 # models
@@ -15,10 +16,14 @@ from ..serializers.implementaion_service_serializer import ImplementaionServiceS
 from utils import BadRequestError, PermissionError
 from utils.messages import ResponseFormatter
 from utils.shortcuts import get_object_or_404
-
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 class ImplementaionServiceViewSet(viewsets.ModelViewSet):
     serializer_class = ImplementaionServiceSerializer
     permission_classes = []
+    pagination_class = StandardResultsSetPagination
     parser_classes = (MultiPartParser, FormParser)
     lookup_field = 'uuid'
 

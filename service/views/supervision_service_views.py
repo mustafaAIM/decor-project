@@ -1,5 +1,6 @@
 # rest
 from rest_framework import viewsets
+from rest_framework.pagination import PageNumberPagination
 # models
 from ..models.supervision_service_model import SupervisionService
 # serializers
@@ -8,8 +9,13 @@ from ..serializers.supervision_service_serializer import SupervisionServiceSeria
 # utile
 from utils.api_exceptions import PermissionError
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 class SupervisionServiceViewSet(viewsets.ModelViewSet):
     serializer_class = SupervisionServiceSerializer
+    pagination_class = StandardResultsSetPagination
     permission_classes = []
     lookup_field = 'uuid'
 
