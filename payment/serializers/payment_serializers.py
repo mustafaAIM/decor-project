@@ -46,3 +46,6 @@ class PaymentIntentSerializer(serializers.Serializer):
         choices=['web', 'ios', 'android'], 
         required=True
     ) 
+
+class RefundSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True) 

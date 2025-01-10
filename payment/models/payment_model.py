@@ -4,6 +4,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import timedelta
 
 class Payment(models.Model):
     class PaymentStatus(models.TextChoices):
@@ -41,6 +43,19 @@ class Payment(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     
     paid = models.BooleanField(default=False)
+
+    refund_reason = models.TextField(null=True, blank=True)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+    refund_id = models.CharField(max_length=255, null=True, blank=True)
+    
+    @property
+    def can_be_refunded(self):
+        """Check if payment is eligible for refund (within 24 hours and completed)"""
+        if not self.is_paid or self.status == self.PaymentStatus.REFUNDED or not self.completed_at:
+            return False
+            
+        time_difference = timezone.now() - self.completed_at
+        return time_difference <= timedelta(hours=24)
 
     @staticmethod
     def calculate_fees(amount, payment_method):

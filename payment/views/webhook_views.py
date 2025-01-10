@@ -7,6 +7,9 @@ import logging
 from ..models import Payment
 from django.db import transaction
 from order.models.order_model import Order
+from utils.notification import notify_admins
+from django.utils.translation import gettext as _
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +62,7 @@ def handle_successful_payment(payment_intent):
         payment.status = Payment.PaymentStatus.COMPLETED
         payment.transaction_id = payment_intent.id
         payment.paid = True
+        payment.completed_at = timezone.now()
         payment.save()
         
         payable = payment.payable
@@ -69,9 +73,18 @@ def handle_successful_payment(payment_intent):
                     product_color.quantity -= item.quantity
                     product_color.save()
                 payable.status = payable.OrderStatus.PROCESSING
+                notify_admins(
+                    sender=payable.customer.user,
+                    message=f"New order payment received: {payable.order_number} - Amount: ${payment.amount}"
+                )
             elif hasattr(payable, 'ServiceStatus'):
                 payable.status = payable.ServiceStatus.PROCESSING
+                notify_admins(
+                    sender=payable.customer.user,
+                    message=f"New service payment received: {payable.service_number} - Amount: ${payment.amount}"
+                )
             payable.save()
+            
         logger.info(f"Payment {payable.uuid} {payable.status} marked as completed")
         logger.info(f"Payment {payment.uuid} marked as completed")
     except Payment.DoesNotExist:

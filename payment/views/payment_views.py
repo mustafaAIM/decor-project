@@ -9,9 +9,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from product.models import ProductColor
 from utils import BadRequestError
+from utils.notification import notify_admins
+from django.utils.translation import gettext as _
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Q
 
 from ..models import Payment
-from ..serializers.payment_serializers import PaymentSerializer, PaymentIntentSerializer
+from ..serializers.payment_serializers import PaymentSerializer, PaymentIntentSerializer, RefundSerializer
 from order.models import Order
 from service.models import ServiceOrder
 from utils import BadRequestError
@@ -32,8 +37,22 @@ class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsCustomer]
 
     def get_queryset(self):
+        """
+        Filter payments for orders and services belonging to the current user's customer
+        """
+        customer = self.request.user.customer
+        order_type = ContentType.objects.get_for_model(Order)
+        service_type = ContentType.objects.get_for_model(ServiceOrder)
+        
         return Payment.objects.filter(
-            payable__customer=self.request.user.customer
+            Q(
+                content_type=order_type,
+                object_id__in=Order.objects.filter(customer=customer).values('id')
+            ) |
+            Q(
+                content_type=service_type,
+                object_id__in=ServiceOrder.objects.filter(customer=customer).values('id')
+            )
         )
 
     def get_platform_urls(self, platform, payment_uuid):
@@ -194,6 +213,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 ar_message="حدث خطأ في معالجة الدفع"
             )
 
+    @transaction.atomic
     @action(detail=False, methods=['get'], url_path='paypal-success')
     def paypal_success(self, request):
         payment_uuid = request.query_params.get('payment_uuid')
@@ -207,14 +227,25 @@ class PaymentViewSet(viewsets.ModelViewSet):
             if paypal_payment.execute({"payer_id": payer_id}):
                 payment.status = Payment.PaymentStatus.COMPLETED
                 payment.transaction_id = payment_id
+                payment.paid = True
+                payment.completed_at = timezone.now()
                 payment.save()
 
                 payable = payment.payable
                 if payable is not None:
                     if isinstance(payable, Order):
+                        self.decrement_quantities(payable)
                         payable.status = Order.OrderStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New order payment received: {payable.order_number} - Amount: ${payment.amount}"
+                        )
                     elif isinstance(payable, ServiceOrder):
                         payable.status = ServiceOrder.ServiceStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New service payment received: {payable.service_number} - Amount: ${payment.amount}"
+                        )
                     payable.save()
                 else:
                     print(f"Warning: No payable found for payment {payment_uuid}")
@@ -258,16 +289,24 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payment.status = Payment.PaymentStatus.COMPLETED
                 payment.transaction_id = payment_intent.id
                 payment.paid = True
+                payment.completed_at = timezone.now()
                 payment.save()
                 
                 payable = payment.payable
                 if payable is not None:
                     if isinstance(payable, Order):
-                        # Decrement quantities for order items
                         self.decrement_quantities(payable)
                         payable.status = Order.OrderStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New order payment received: {payable.order_number} - Amount: ${payment.amount}"
+                        )
                     elif isinstance(payable, ServiceOrder):
-                        payable.status = ServiceOrder.ServiceStatus.IN_PROGRESS
+                        payable.status = ServiceOrder.ServiceStatus.PROCESSING
+                        notify_admins(
+                            sender=request.user,
+                            message=f"New service payment received: {payable.service_number} - Amount: ${payment.amount}"
+                        )
                     payable.save()
                 
                 return Response({
@@ -291,4 +330,77 @@ class PaymentViewSet(viewsets.ModelViewSet):
             raise BadRequestError(
                 en_message=str(e),
                 ar_message="حدث خطأ في التحقق من الدفع"
+            )
+
+    @transaction.atomic
+    @action(detail=True, methods=['post'])
+    def refund(self, request, uuid=None):
+        payment = self.get_object()
+        serializer = RefundSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        if not payment.can_be_refunded:
+            raise BadRequestError(
+                en_message="This payment cannot be refunded. Refunds are only available within 24 hours of payment completion.",
+                ar_message="لا يمكن استرداد هذه الدفعة. الاسترداد متاح فقط خلال 24 ساعة من إتمام الدفع."
+            )
+
+        try:
+            if payment.payment_method == Payment.PaymentMethod.STRIPE:
+                refund = stripe.Refund.create(
+                    payment_intent=payment.payment_intent_id,
+                    reason='requested_by_customer'
+                )
+                refund_id = refund.id
+                
+            elif payment.payment_method == Payment.PaymentMethod.PAYPAL:
+                paypal_payment = paypalrestsdk.Payment.find(payment.transaction_id)
+                sale_id = paypal_payment.transactions[0].related_resources[0].sale.id
+                
+                refund = paypalrestsdk.Sale.find(sale_id).refund({
+                    "amount": {
+                        "total": str(payment.amount),
+                        "currency": "USD"
+                    }
+                })
+                
+                if not refund.success():
+                    raise BadRequestError(
+                        en_message="PayPal refund failed",
+                        ar_message="فشل استرداد المبلغ عبر باي بال"
+                    )
+                refund_id = refund.id
+
+            payment.status = Payment.PaymentStatus.REFUNDED
+            payment.refund_id = refund_id
+            payment.refund_reason = serializer.validated_data.get('reason', '')
+            payment.refunded_at = timezone.now()
+            payment.save()
+            payable = payment.payable
+            print(payable)
+            if isinstance(payable, Order):
+                print(payable.items.all())
+                for item in payable.items.all():
+                    product_color = item.product_color
+                    product_color.quantity += item.quantity
+                    product_color.save()
+                payable.status = Order.OrderStatus.REFUNDED
+            elif isinstance(payable, ServiceOrder):
+                payable.status = ServiceOrder.ServiceStatus.REFUNDED
+            payable.save()
+
+            notify_admins(
+                sender=request.user,
+                message=f"Refund processed for {payment.payment_method}: {payable.__class__.__name__} {payable.reference_number} - Amount: ${payment.amount}"
+            )
+
+            return Response({
+                'message': _('Refund processed successfully'),
+                'refund_id': refund_id
+            })
+
+        except (stripe.error.StripeError, paypalrestsdk.ResourceNotFound) as e:
+            raise BadRequestError(
+                en_message=f"Refund failed: {str(e)}",
+                ar_message="فشل استرداد المبلغ"
             )
