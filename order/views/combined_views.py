@@ -23,7 +23,8 @@ class CombinedOrderViewSet(ViewSet):
             'customer'
         ).prefetch_related(
             'items__product_color__product',
-            'items__product_color__color'
+            'items__product_color__color',
+            'payments'
         )
 
         # Get paid service orders (design, consulting, area)
@@ -32,6 +33,8 @@ class CombinedOrderViewSet(ViewSet):
         ).select_related(
             'customer',
             'content_type'
+        ).prefetch_related(
+            'payments'
         )
 
         # Get implementation services (direct, no ServiceOrder)
