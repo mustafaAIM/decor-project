@@ -92,15 +92,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         product = get_object_or_404(Product, uuid=uuid)
         serialized_product = ProductRetrieveSerializer(product)
         product = serialized_product.data
+        product['image'] = request.build_absolute_uri(product['image']) if product['image'] else None
         for product_color in product['product_colors']:
             product_color['image'] = request.build_absolute_uri(product_color['image']) if product_color['image'] else None
         return ResponseFormatter.success_response(data=product)
-    
-    def update(self, request, uuid=None, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = get_object_or_404(Product, uuid=uuid)
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(instance, data=request.data, partial=partial, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return ResponseFormatter.success_response(data=serializer.data) 
