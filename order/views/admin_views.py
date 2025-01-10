@@ -3,10 +3,12 @@ from admin.permissions import IsAdmin
 from django_filters import rest_framework as filters
 from django.db.models import Q
 from order.models import Order
-from order.serializers.admin_serializers import AdminOrderSerializer
-from utils import ResponseFormatter
+from order.serializers.admin_serializers import AdminOrderSerializer, AdminOrderStatusSerializer
+from utils import ResponseFormatter, BadRequestError
 from datetime import datetime, timedelta
 from django.utils import timezone
+from rest_framework.decorators import action
+from rest_framework import status as http_status
 
 class OrderFilter(filters.FilterSet):
     # Status filters
@@ -98,4 +100,46 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(instance)
         return ResponseFormatter.success_response(
             data=serializer.data
+        )
+
+    @action(detail=True, methods=['patch'])
+    def change_status(self, request, uuid=None):
+        instance = self.get_object()
+        serializer = AdminOrderStatusSerializer(instance, data=request.data, partial=True)
+        
+        if not serializer.is_valid():
+            raise BadRequestError(
+                en_message="Invalid status",
+                ar_message="حالة غير صالحة"
+            )
+
+        # Check if the status transition is valid
+        new_status = serializer.validated_data['status']
+        current_status = instance.status
+
+        # Define valid status transitions
+        valid_transitions = {
+            Order.OrderStatus.PENDING: [Order.OrderStatus.PROCESSING, Order.OrderStatus.CANCELLED],
+            Order.OrderStatus.PROCESSING: [Order.OrderStatus.COMPLETED, Order.OrderStatus.CANCELLED],
+            Order.OrderStatus.COMPLETED: [Order.OrderStatus.REFUNDED],
+            Order.OrderStatus.CANCELLED: [],  # No transitions allowed from CANCELLED
+            Order.OrderStatus.REFUNDED: [],   # No transitions allowed from REFUNDED
+        }
+
+        if new_status not in valid_transitions.get(current_status, []):
+            raise BadRequestError(
+                en_message=f"Cannot change status from {current_status} to {new_status}",
+                ar_message=f"لا يمكن تغيير الحالة من {current_status} إلى {new_status}"
+            )
+
+        # Update the status
+        instance = serializer.save()
+        
+        # If status is changed to COMPLETED, set completed_at
+        if new_status == Order.OrderStatus.COMPLETED:
+            instance.completed_at = timezone.now()
+            instance.save()
+
+        return ResponseFormatter.success_response(
+            data=AdminOrderSerializer(instance).data,
         )

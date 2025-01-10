@@ -59,3 +59,14 @@ class AdminOrderSerializer(serializers.ModelSerializer):
             'phone': obj.customer.user.phone,
             'address': obj.customer.user.address
         }
+
+class AdminOrderStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['status']
+
+    def validate_status(self, value):
+        if value not in [Order.OrderStatus.PROCESSING, Order.OrderStatus.COMPLETED, 
+                        Order.OrderStatus.CANCELLED, Order.OrderStatus.REFUNDED]:
+            raise serializers.ValidationError("Invalid status for admin")
+        return value
