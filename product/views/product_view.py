@@ -6,6 +6,7 @@ from rest_framework import viewsets, filters
 from rest_framework.pagination import PageNumberPagination
 # models
 from ..models.product_model import Product
+from ..models.product_color_model import ProductColor
 # seializers
 from ..serializers.product_serializer import ProductSerializer
 from ..serializers.product_create_serializer import ProductCreateSerializer
@@ -93,6 +94,10 @@ class ProductViewSet(viewsets.ModelViewSet):
         serialized_product = ProductRetrieveSerializer(product)
         product = serialized_product.data
         product['image'] = request.build_absolute_uri(product['image']) if product['image'] else None
+        product['price'] = ProductColor.objects.filter(product=product).first().price
         for product_color in product['product_colors']:
             product_color['image'] = request.build_absolute_uri(product_color['image']) if product_color['image'] else None
         return ResponseFormatter.success_response(data=product)
+    
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
