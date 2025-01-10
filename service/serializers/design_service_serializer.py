@@ -25,6 +25,12 @@ class DesignServiceSerializer(serializers.ModelSerializer):
     )
     prefered_colors_details = ColorSerializer(source='prefered_colors', many=True, read_only=True)
     files = DesignServiceFileSerializer(many=True, read_only=True)
+    area_file = serializers.FileField(write_only=True, required=True)
+    inspiration_files = serializers.ListField(
+        child=serializers.FileField(),
+        write_only=True,
+        required=False
+    )
     
     class Meta:
         model = DesignService
@@ -33,9 +39,9 @@ class DesignServiceSerializer(serializers.ModelSerializer):
             'section_uuid', 'section', 'section_details',
             'area', 'plan_uuid', 'plan', 'plan_details',
             'prefered_colors', 'prefered_colors_details',
-            'phone_number', 'email', 'address','city',
+            'phone_number', 'email', 'address', 'city',
             'status', 'created_at', 'updated_at',
-            'files'
+            'files', 'area_file', 'inspiration_files'
         ]
         read_only_fields = ['created_at', 'updated_at', 'status', 'title', 'section', 'plan']
 
@@ -69,6 +75,9 @@ class DesignServiceSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        area_file = validated_data.pop('area_file')
+        inspiration_files = validated_data.pop('inspiration_files', [])
+        
         hex_colors = validated_data.pop('prefered_colors', [])
         section = validated_data.pop('section_uuid')
         plan = validated_data.pop('plan_uuid')
@@ -87,6 +96,19 @@ class DesignServiceSerializer(serializers.ModelSerializer):
                 colors.append(color)
             
             instance.prefered_colors.set(colors)
+        
+        DesignServiceFile.objects.create(
+            service=instance,
+            file=area_file,
+            file_type='area_file'
+        )
+        
+        for inspiration_file in inspiration_files:
+            DesignServiceFile.objects.create(
+                service=instance,
+                file=inspiration_file,
+                file_type='inspiration'
+            )
         
         return instance
 
