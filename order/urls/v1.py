@@ -12,5 +12,8 @@ urlpatterns = [
     }), name='order-detail'),
     path('combined-orders/', CombinedOrderViewSet.as_view({'get': 'list'}), name='combined-orders'),
     path('admin/orders/', AdminOrderViewSet.as_view({'get': 'list'}), name='admin-order-list'),
-    path('admin/orders/<uuid:uuid>/', AdminOrderViewSet.as_view({'get': 'retrieve'}), name='admin-order-detail'),
+    path('admin/orders/<uuid:uuid>/', AdminOrderViewSet.as_view({
+        'get': 'retrieve',
+        'patch': 'change_status'
+    }), name='admin-order-detail'),
 ] 
