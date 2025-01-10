@@ -19,7 +19,7 @@ def homepage_data(request):
         {
             'uuid': product.uuid,
             'name': product.name,
-            'image': request.build_absolute_uri(product.image) if product.image else None,
+            'image': request.build_absolute_uri(product.image.url) if product.image else None,
             'price': get_product_price(product),
             'category': str(product.category),
             'sold_counter': product.sold_counter,

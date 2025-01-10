@@ -6,7 +6,6 @@ from rest_framework import viewsets, filters
 from rest_framework.pagination import PageNumberPagination
 # models
 from ..models.product_model import Product
-from ..models.product_color_model import ProductColor
 # seializers
 from ..serializers.product_serializer import ProductSerializer
 from ..serializers.product_create_serializer import ProductCreateSerializer
@@ -17,7 +16,6 @@ from ..filters import ProductFilter
 from ..utils.search import AdvancedSearchFilter
 from utils.messages import ResponseFormatter
 from utils.shortcuts import get_object_or_404
-from utils.notification import send_notification
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
