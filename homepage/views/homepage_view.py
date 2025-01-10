@@ -2,7 +2,7 @@ from django.db import models
 from django.http import JsonResponse
 from product.models.product_model import Product
 from product.models.rate_model import Rate
-
+from product.models.product_color_model import ProductColor
 
 def homepage_data(request):
     # Get the top 10 sold products
@@ -20,6 +20,7 @@ def homepage_data(request):
             'uuid': product.uuid,
             'name': product.name,
             'image': request.build_absolute_uri(product.image) if product.image else None,
+            'price': get_product_price(product),
             'category': str(product.category),
             'sold_counter': product.sold_counter,
             'created_at': product.created_at,
@@ -37,3 +38,6 @@ def get_average_rating(product):
     ratings = Rate.objects.filter(product=product)
     average = ratings.aggregate(models.Avg('score'))['score__avg']
     return average if average is not None else 0.0
+
+def get_product_price(product):
+    return ProductColor.objects.filter(product=product).first().price if len(ProductColor.objects.filter(product=product)) > 0 else 0.0
