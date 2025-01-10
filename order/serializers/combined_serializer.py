@@ -17,6 +17,7 @@ class CombinedOrderSerializer(serializers.Serializer):
     notes = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
     amount = serializers.SerializerMethodField()
+    payment_uuids = serializers.SerializerMethodField()
 
     def get_type(self, obj):
         data = obj['data']
@@ -105,3 +106,9 @@ class CombinedOrderSerializer(serializers.Serializer):
         if isinstance(data, dict):  
             return 0  
         return float(data.amount) if hasattr(data, 'amount') else 0 
+
+    def get_payment_uuids(self, obj):
+        data = obj['data']
+        if isinstance(data, Order) or isinstance(data, ServiceOrder):
+            return str(data.payments.order_by('created_at').last().uuid) if data.payments.order_by('created_at').last() else None
+        return None
