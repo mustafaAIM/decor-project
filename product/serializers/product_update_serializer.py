@@ -10,20 +10,33 @@ from section.models.category_model import Category
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
     category = serializers.UUIDField(required=False)
+    hex_codes = serializers.ListField(
+        child=serializers.CharField(max_length=255),
+        required=False
+    )
+    prices = serializers.ListField(
+        child=serializers.DecimalField(max_digits=10, decimal_places=2),
+        required=False
+    )
+    quantities = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False
+    )
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        required=False
+    )
 
     class Meta:
         model = Product
-        fields = ['uuid', 'name', 'description', 'image', 'category']
-        
+        fields = ['uuid', 'name', 'description', 'image', 'category', 'hex_codes', 'prices', 'quantities', 'images']
+
     def update(self, instance, validated_data):
-        '''
-            updates a product instance with the provided validated data. 
-            handles the update of product colors, including adding new colors and updating existing ones. 
-            If a category UUID is provided, it updates the product's category. 
-            returns the updated product instance.
-        '''
-        
-        product_colors_data = self.context['request'].data.get('product_colors', [])
+        hex_codes = validated_data.pop('hex_codes', [])
+        prices = validated_data.pop('prices', [])
+        quantities = validated_data.pop('quantities', [])
+        images = validated_data.pop('images', [])
+
         category_uuid = validated_data.pop('category', None)
         
         if category_uuid:
@@ -37,24 +50,25 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         instance.category = category
         instance.save()
 
-        existing_colors = {pc.color.hex_code: pc.color.hex_code for pc in instance.product_colors.all()}
-        for product_color_data in product_colors_data:
-            color_data = product_color_data.get('color', {})
-            color_hex = color_data.get('hex_code')
+        if (len(hex_codes) != len(prices)) or (len(hex_codes) != len(quantities)) or (len(hex_codes) != len(images)):
+            raise serializers.ValidationError("hex_codes, prices, quantities, and images must have the same length.")
 
-            if color_hex:
-                if color_hex in existing_colors:
-                    product_color = existing_colors[color_hex]
-                    product_color.price = product_color_data.get('price', product_color.price)
-                    product_color.quantity = product_color_data.get('quantity', product_color.quantity)
-                    product_color.save()
-                else:
-                    color = Color.objects.create(hex_code=color_hex)
-                    ProductColor.objects.create(
-                        product=instance,
-                        color=color,
-                        price=product_color_data.get('price'),
-                        quantity=product_color_data.get('quantity')
-                    )
+        existing_colors = {pc.color.hex_code: pc for pc in instance.product_colors.all()}
+        for hex_code, price, quantity, image in zip(hex_codes, prices, quantities, images):
+            if hex_code in list(existing_colors.keys()):
+                product_color = existing_colors[hex_code]
+                product_color.price = price
+                product_color.quantity = quantity
+                product_color.image = image
+                product_color.save()
+            else:
+                color = Color.objects.create(hex_code=hex_code)
+                ProductColor.objects.create(
+                    product=instance,
+                    color=color,
+                    price=price,
+                    quantity=quantity,
+                    image=image
+                )
 
         return instance

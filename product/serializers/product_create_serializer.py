@@ -37,6 +37,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         fields = ['uuid', 'name', 'description', 'image', 'category', 'hex_codes', 'prices', 'quantities', 'images']
 
     def create(self, validated_data):
+        print(validated_data)
         hex_codes = validated_data.pop('hex_codes', [])
         prices = validated_data.pop('prices', [])
         quantities = validated_data.pop('quantities', [])

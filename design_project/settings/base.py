@@ -34,7 +34,6 @@ DEBUG = os.getenv('DJANGO_ENV') == 'development'
 
 ALLOWED_HOSTS = ['*']  # For development only. In production, specify your domains.
 
-
 # Application definition
 
 INSTALLED_APPS = [
