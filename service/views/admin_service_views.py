@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAdminUser
+from admin.permissions import IsAdmin
 from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
 from ..models import ServiceOrder
@@ -7,7 +7,7 @@ from ..serializers.service_order_details_serializer import ServiceOrderDetailsSe
 
 class AdminServiceOrderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ServiceOrderDetailsSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
     lookup_field = 'uuid'
     
     def get_queryset(self):
