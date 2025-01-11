@@ -9,6 +9,13 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework import status as http_status
+from rest_framework.pagination import PageNumberPagination
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 
 class OrderFilter(filters.FilterSet):
     # Status filters
@@ -74,6 +81,7 @@ class AdminOrderViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAdmin]
     serializer_class = AdminOrderSerializer
     filterset_class = OrderFilter
+    pagination_class = StandardResultsSetPagination
     lookup_field = 'uuid'
     pagination_class = None
 
