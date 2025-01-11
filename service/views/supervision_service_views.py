@@ -8,6 +8,7 @@ from ..serializers.supervision_service_serializer import SupervisionServiceSeria
 # permissions
 # utile
 from utils.api_exceptions import PermissionError
+from utils.notification import notify_admins
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -28,6 +29,8 @@ class SupervisionServiceViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         if not request.user.is_authenticated or not hasattr(request.user, 'customer'):
             raise PermissionError(en_message='You do not have permission to perform this action.', ar_message='ليس لديك الصلاحيات للقيام بعملية الإنشاء هذه.')
+        message = f'the user {request.user} has created a supervision service'
+        notify_admins(sender=request.user, message=message)
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):

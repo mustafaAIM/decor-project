@@ -16,6 +16,7 @@ from ..serializers.implementaion_service_serializer import ImplementaionServiceS
 from utils import BadRequestError, PermissionError
 from utils.messages import ResponseFormatter
 from utils.shortcuts import get_object_or_404
+from utils.notification import notify_admins
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -87,7 +88,8 @@ class ImplementaionServiceViewSet(viewsets.ModelViewSet):
                 file=file,
                 file_type='inspiration'
             )
-        
+        message = f'the user {request.user} has created an implementation service'
+        notify_admins(sender=request.user, message=message)
         return ResponseFormatter.success_response(data=serializer.data, status_code=201)
 
     def update(self, request, *args, **kwargs):
