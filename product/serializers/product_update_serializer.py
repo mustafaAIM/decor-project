@@ -53,18 +53,22 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         if (len(hex_codes) != len(prices)) or (len(hex_codes) != len(quantities)) or (len(hex_codes) != len(images)):
             raise serializers.ValidationError("hex_codes, prices, quantities, and images must have the same length.")
 
-        # Delete existing product colors
-        instance.product_colors.all().delete()
-
-        # Create new product colors
+        existing_colors = {pc.color.hex_code: pc for pc in instance.product_colors.all()}
         for hex_code, price, quantity, image in zip(hex_codes, prices, quantities, images):
-            color, _ = Color.objects.get_or_create(hex_code=hex_code)
-            ProductColor.objects.create(
-                product=instance,
-                color=color,
-                price=price,
-                quantity=quantity,
-                image=image
-            )
+            if hex_code in list(existing_colors.keys()):
+                product_color = existing_colors[hex_code]
+                # product_color.price = price
+                product_color.quantity = quantity
+                # product_color.image = image
+                product_color.save()
+            else:
+                color = Color.objects.create(hex_code=hex_code)
+                ProductColor.objects.create(
+                    product=instance,
+                    color=color,
+                    price=price,
+                    quantity=quantity,
+                    image=image
+                )
 
         return instance
