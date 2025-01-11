@@ -14,28 +14,18 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         child=serializers.CharField(max_length=255),
         required=False
     )
-    prices = serializers.ListField(
-        child=serializers.DecimalField(max_digits=10, decimal_places=2),
-        required=False
-    )
     quantities = serializers.ListField(
         child=serializers.IntegerField(),
-        required=False
-    )
-    images = serializers.ListField(
-        child=serializers.ImageField(),
         required=False
     )
 
     class Meta:
         model = Product
-        fields = ['uuid', 'name', 'description', 'image', 'category', 'hex_codes', 'prices', 'quantities', 'images']
+        fields = ['uuid', 'name', 'description', 'image', 'category', 'hex_codes', 'quantities']
 
     def update(self, instance, validated_data):
         hex_codes = validated_data.pop('hex_codes', [])
-        prices = validated_data.pop('prices', [])
         quantities = validated_data.pop('quantities', [])
-        images = validated_data.pop('images', [])
 
         category_uuid = validated_data.pop('category', None)
         
@@ -50,25 +40,14 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
         instance.category = category
         instance.save()
 
-        if (len(hex_codes) != len(prices)) or (len(hex_codes) != len(quantities)) or (len(hex_codes) != len(images)):
-            raise serializers.ValidationError("hex_codes, prices, quantities, and images must have the same length.")
+        if (len(hex_codes) != len(quantities)):
+            raise serializers.ValidationError("hex_codes and quantities must have the same length.")
 
         existing_colors = {pc.color.hex_code: pc for pc in instance.product_colors.all()}
-        for hex_code, price, quantity, image in zip(hex_codes, prices, quantities, images):
+        for hex_code, quantity in zip(hex_codes, quantities):
             if hex_code in list(existing_colors.keys()):
                 product_color = existing_colors[hex_code]
-                # product_color.price = price
                 product_color.quantity = quantity
-                # product_color.image = image
                 product_color.save()
-            else:
-                color = Color.objects.create(hex_code=hex_code)
-                ProductColor.objects.create(
-                    product=instance,
-                    color=color,
-                    price=price,
-                    quantity=quantity,
-                    image=image
-                )
 
         return instance
