@@ -2,11 +2,14 @@ from rest_framework import serializers
 from order.models import Order
 from service.models import ServiceOrder
 from order.serializers.order_serializers import OrderItemSerializer
+from django.utils import timezone
+from datetime import timedelta
 
 class CombinedOrderSerializer(serializers.Serializer):
     uuid = serializers.UUIDField()
     type = serializers.SerializerMethodField()
     paid = serializers.SerializerMethodField()
+    payable = serializers.SerializerMethodField()
     reference_number = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField()
@@ -112,3 +115,11 @@ class CombinedOrderSerializer(serializers.Serializer):
         if isinstance(data, Order) or isinstance(data, ServiceOrder):
             return str(data.payments.order_by('created_at').last().uuid) if data.payments.order_by('created_at').last() else None
         return None
+
+    def get_payable(self, obj):
+        data = obj['data']
+        if isinstance(data, dict):  
+            return False
+        created_at = data.created_at
+        time_difference = timezone.now() - created_at
+        return time_difference.total_seconds() <= 24 * 3600 
