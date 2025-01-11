@@ -22,6 +22,15 @@ class CombinedOrderViewSet(ViewSet):
     permission_classes = [IsCustomer]
     pagination_class = StandardResultsSetPagination
 
+    def get_paginated_response(self, data):
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(data, self.request)
+        if page is not None:
+            serializer = CombinedOrderSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+        serializer = CombinedOrderSerializer(data, many=True)
+        return Response(serializer.data)
+
     def list(self, request):
         # Get regular orders
         orders = Order.objects.filter(
@@ -112,8 +121,14 @@ class CombinedOrderViewSet(ViewSet):
         # Sort all items by created_at
         serialized_data.sort(key=lambda x: x['created_at'], reverse=True)
 
-        serializer = CombinedOrderSerializer(serialized_data, many=True)
+        # Apply pagination and return response
+        paginated_response = self.get_paginated_response(serialized_data)
         
         return ResponseFormatter.success_response(
-            data=serializer.data
+            data={
+                'count': paginated_response.data['count'],
+                'next': paginated_response.data['next'],
+                'previous': paginated_response.data['previous'],
+                'results': paginated_response.data['results']
+            }
         ) 
