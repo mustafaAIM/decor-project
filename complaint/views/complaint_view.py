@@ -67,9 +67,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         """Return appropriate serializer based on action"""
-        if self.action == 'list':
-            return ComplaintListSerializer
-        elif self.action == 'create':
+        if self.action == 'create':
             return ComplaintCreateSerializer
         return ComplaintDetailSerializer
 
