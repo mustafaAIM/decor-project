@@ -28,10 +28,10 @@ class ImplementaionServiceViewSet(viewsets.ModelViewSet):
     lookup_field = 'uuid'
 
     def get_queryset(self):
-        if self.request.user.is_authenticated and self.request.user.customer:
-            return ImplementaionService.objects.filter(customer=self.request.user.customer)
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
+            return ImplementaionService.objects.filter(customer=self.request.user.customer).order_by('-created_at')
         else:
-            return ImplementaionService.objects.all()
+            return ImplementaionService.objects.all().order_by('-created_at')
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
