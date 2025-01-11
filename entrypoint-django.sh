@@ -29,7 +29,7 @@ check_migrations() {
 
 # Base apps (no dependencies)
 # run_migrations "authentication"  # User model needs to be first
-#run_migrations "file_management"
+# run_migrations "file_management"
 
 # Apps that depend on authentication
 # run_migrations "employee"
@@ -47,14 +47,14 @@ check_migrations() {
 # run_migrations "order"
 # run_migrations "payment"
 # Final migration check
-echo "Running any remaining migrations..."
+# echo "Running any remaining migrations..."
 python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 
-Verify all migrations are applied
+# Verify all migrations are applied
 
 #echo "Creating cache tables..."
-#python manage.py createcachetable 
+# python manage.py createcachetable 
 
 # echo "Collecting static files..."
 #python manage.py collectstatic
