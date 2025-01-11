@@ -38,7 +38,7 @@ check_migrations() {
 
 # # Feature apps
 # run_migrations "section"  # Categories need to exist before products
-run_migrations "product"
+# run_migrations "product"
 # run_migrations "plan"
 # run_migrations "service"
 # run_migrations "design"
