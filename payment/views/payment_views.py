@@ -14,6 +14,7 @@ from django.utils.translation import gettext as _
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
+import logging
 
 from ..models import Payment
 from ..serializers.payment_serializers import PaymentSerializer, PaymentIntentSerializer, RefundSerializer
@@ -29,6 +30,8 @@ paypalrestsdk.configure({
     "client_id": settings.PAYPAL_CLIENT_ID,
     "client_secret": settings.PAYPAL_CLIENT_SECRET
 })
+
+logger = logging.getLogger(__name__)
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
@@ -336,26 +339,48 @@ class PaymentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def refund(self, request, uuid=None):
         payment = self.get_object()
+        logger.info(f"Refund request received for payment {payment.uuid}")
+        logger.info(f"Payment completed_at: {payment.completed_at}")
+        logger.info(f"Current status: {payment.status}")
+        logger.info(f"Is paid: {payment.is_paid}")
+        
         serializer = RefundSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
+        # Log refund eligibility check
+        time_since_completion = None
+        if payment.completed_at:
+            time_since_completion = timezone.now() - payment.completed_at
+            logger.info(f"Time since completion: {time_since_completion}")
+        
         if not payment.can_be_refunded:
+            logger.warning(f"Refund rejected for payment {payment.uuid}. "
+                         f"Status: {payment.status}, "
+                         f"Is paid: {payment.is_paid}, "
+                         f"Completed at: {payment.completed_at}, "
+                         f"Time since completion: {time_since_completion}")
             raise BadRequestError(
                 en_message="This payment cannot be refunded. Refunds are only available within 24 hours of payment completion.",
                 ar_message="لا يمكن استرداد هذه الدفعة. الاسترداد متاح فقط خلال 24 ساعة من إتمام الدفع."
             )
 
         try:
+            logger.info(f"Processing refund for payment {payment.uuid} via {payment.payment_method}")
+            
             if payment.payment_method == Payment.PaymentMethod.STRIPE:
+                logger.info(f"Initiating Stripe refund for payment_intent: {payment.payment_intent_id}")
                 refund = stripe.Refund.create(
                     payment_intent=payment.payment_intent_id,
                     reason='requested_by_customer'
                 )
                 refund_id = refund.id
+                logger.info(f"Stripe refund created with ID: {refund_id}")
                 
             elif payment.payment_method == Payment.PaymentMethod.PAYPAL:
+                logger.info(f"Initiating PayPal refund for transaction: {payment.transaction_id}")
                 paypal_payment = paypalrestsdk.Payment.find(payment.transaction_id)
                 sale_id = paypal_payment.transactions[0].related_resources[0].sale.id
+                logger.info(f"Found PayPal sale ID: {sale_id}")
                 
                 refund = paypalrestsdk.Sale.find(sale_id).refund({
                     "amount": {
@@ -365,30 +390,43 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 })
                 
                 if not refund.success():
+                    logger.error(f"PayPal refund failed: {refund.error}")
                     raise BadRequestError(
                         en_message="PayPal refund failed",
                         ar_message="فشل استرداد المبلغ عبر باي بال"
                     )
                 refund_id = refund.id
+                logger.info(f"PayPal refund created with ID: {refund_id}")
 
+            # Update payment status
             payment.status = Payment.PaymentStatus.REFUNDED
             payment.refund_id = refund_id
             payment.refund_reason = serializer.validated_data.get('reason', '')
             payment.refunded_at = timezone.now()
             payment.save()
+            logger.info(f"Payment {payment.uuid} marked as refunded")
+
+            # Handle payable updates
             payable = payment.payable
-            print(payable)
+            logger.info(f"Processing payable updates for {payable.__class__.__name__} {payable.id}")
+            
             if isinstance(payable, Order):
-                print(payable.items.all())
+                logger.info(f"Processing order refund for order {payable.order_number}")
                 for item in payable.items.all():
                     product_color = item.product_color
+                    original_quantity = product_color.quantity
                     product_color.quantity += item.quantity
                     product_color.save()
+                    logger.info(f"Updated product {product_color.product.name} quantity from {original_quantity} to {product_color.quantity}")
                 payable.status = Order.OrderStatus.REFUNDED
             elif isinstance(payable, ServiceOrder):
+                logger.info(f"Processing service order refund for service {payable.service_number}")
                 payable.status = ServiceOrder.ServiceStatus.REFUNDED
+            
             payable.save()
+            logger.info(f"Payable status updated to REFUNDED")
 
+            # Send admin notification
             notify_admins(
                 sender=request.user,
                 message=f"Refund processed for {payment.payment_method}: {payable.__class__.__name__} {payable.service_number if isinstance(payable, ServiceOrder) else payable.order_number} - Amount: ${payment.amount}"
@@ -400,6 +438,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
             })
 
         except (stripe.error.StripeError, paypalrestsdk.ResourceNotFound) as e:
+            logger.error(f"Refund failed for payment {payment.uuid}: {str(e)}")
             raise BadRequestError(
                 en_message=f"Refund failed: {str(e)}",
                 ar_message="فشل استرداد المبلغ"
