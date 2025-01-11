@@ -1,5 +1,6 @@
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 from itertools import chain
 from operator import attrgetter
@@ -12,8 +13,14 @@ from order.serializers.combined_serializer import CombinedOrderSerializer
 from utils import ResponseFormatter
 from customer.permissions import IsCustomer
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class CombinedOrderViewSet(ViewSet):
     permission_classes = [IsCustomer]
+    pagination_class = StandardResultsSetPagination
 
     def list(self, request):
         # Get regular orders

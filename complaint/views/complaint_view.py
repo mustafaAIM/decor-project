@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 
 from complaint.models.complaint_model import Complaint, ComplaintStatus
 from complaint.serializers.complaint_serializer import (
@@ -13,6 +14,12 @@ from complaint.serializers.complaint_serializer import (
 )
 from django.utils import timezone
 from complaint.permissions import IsCustomerAndCreateOnly, IsOwnerOrAdmin, IsAdminUser
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class ComplaintViewSet(viewsets.ModelViewSet):
     """
     ViewSet for handling all complaint-related operations.
@@ -21,7 +28,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'  
     lookup_url_kwarg = 'uuid'  
-    
+    pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['title', 'description', 'reference_number']
     ordering_fields = ['created_at', 'updated_at', 'priority', 'status']

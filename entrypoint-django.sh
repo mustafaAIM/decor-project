@@ -46,7 +46,7 @@ check_migrations() {
 # run_migrations "complaint"
 # run_migrations "order"
 # run_migrations "payment"
-run_migrations "notification"
+# run_migrations "notification"
 # Final migration check
 # echo "Running any remaining migrations..."
 python manage.py makemigrations --noinput

@@ -7,13 +7,20 @@ from ..serializers.order_serializers import OrderSerializer, OrderCreateSerializ
 from cart.models import Cart
 from utils import ResponseFormatter, BadRequestError, NotFoundError
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from service.models import ServiceOrder
 from service.models.impementaion_service_model import ImplementaionService
 from service.models.supervision_service_model import SupervisionService
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    pagination_class = StandardResultsSetPagination
     lookup_field = 'uuid'
 
     def get_queryset(self):
