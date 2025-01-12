@@ -57,7 +57,7 @@ services:
     volumes:
       - certbot_certs:/etc/letsencrypt/
       - certbot_www:/var/www/certbot/
-    command: certonly --webroot --webroot-path=/var/www/certbot/ --email moustafa.alhaiba.2003@email.com -d 45.9.191.191 --agree-tos --no-eff-email
+    command: certonly --webroot --webroot-path=/var/www/certbot/ --email moustafa.alhaiba.2003@gmail.com -d serinek.com -d www.serinek.com --agree-tos --no-eff-email
 
   redis:
     image: redis:latest
