@@ -27,7 +27,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
- 
 
   pgadmin:
     image: dpage/pgadmin4
@@ -43,18 +42,30 @@ services:
     image: nginx:latest
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - static_data:/var/www/static/
       - media_data:/var/www/media/
+      - certbot_certs:/etc/letsencrypt/
+      - certbot_www:/var/www/certbot/
     depends_on:
       - app
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_certs:/etc/letsencrypt/
+      - certbot_www:/var/www/certbot/
+    command: certonly --webroot --webroot-path=/var/www/certbot/ --email moustafa.alhaiba.2003@email.com -d 45.9.191.191 --agree-tos --no-eff-email
+
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+
   celery:
     build: .
     env_file:
@@ -70,3 +81,5 @@ volumes:
   static_data:
   media_data:
   redis_data:
+  certbot_certs:
+  certbot_www:
