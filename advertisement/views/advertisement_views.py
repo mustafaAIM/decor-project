@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import PermissionDenied
 from admin.permissions import IsAdminOrReadOnly
 from django.contrib.auth.models import User
-
+from rest_framework.permissions import IsAuthenticated 
 class AdvertisementPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
@@ -15,6 +15,6 @@ class AdvertisementPagination(PageNumberPagination):
 class AdvertisementViewSet(viewsets.ModelViewSet):
     queryset = Advertisement.objects.filter(is_active=True).order_by('-created_at')
     serializer_class = AdvertisementSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
     pagination_class = AdvertisementPagination
     lookup_field = 'uuid'
