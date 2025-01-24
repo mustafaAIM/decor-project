@@ -55,10 +55,10 @@ python manage.py migrate --noinput
 # Verify all migrations are applied
 
 #echo "Creating cache tables..."
-# python manage.py createcachetable 
+python manage.py createcachetable 
 
 # echo "Collecting static files..."
-#python manage.py collectstatic
+python manage.py collectstatic
 
 # Optional: Run data seeding if needed
 #if [ "$DJANGO_SETTINGS_MODULE" = "design_project.settings.dev" ]; then

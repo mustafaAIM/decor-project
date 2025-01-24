@@ -17,7 +17,7 @@ class ComplaintListSerializer(ComplaintBaseSerializer):
         fields = [
             'id', 'uuid', 'reference_number', 'title', 'status', 
             'status_display', 'priority', 'priority_display', 
-            'customer', 'created_at'
+            'customer', 'created_at',"description"
         ]
         read_only_fields = ['id', 'uuid', 'reference_number', 'created_at']
 
