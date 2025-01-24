@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/v1/', include('employee.urls.v1')),
     path('api/v1/', include('dashboard.urls.v1')),
     path('api/v1/', include('homepage.urls.v1')),
+    path('api/v1/', include('advertisement.urls.v1')),
 ]
 
 if settings.DEBUG:

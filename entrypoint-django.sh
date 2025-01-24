@@ -28,25 +28,27 @@ check_migrations() {
 # echo "Running migrations in order..."
 
 # Base apps (no dependencies)
-# run_migrations "authentication"  # User model needs to be first
+run_migrations "authentication"  # User model needs to be first
 # run_migrations "file_management"
 
 # Apps that depend on authentication
-# run_migrations "employee"
-# run_migrations "customer"
-# run_migrations "admin"
+run_migrations "employee"
+run_migrations "customer"
+run_migrations "admin"
 
 # # Feature apps
-# run_migrations "section"  # Categories need to exist before products
-# run_migrations "product"
-# run_migrations "plan"
-# run_migrations "service"
-# run_migrations "design"
-# run_migrations "cart"
-# run_migrations "complaint"
-# run_migrations "order"
-# run_migrations "payment"
-# run_migrations "notification"
+run_migrations "section"  # Categories need to exist before products
+run_migrations "product"
+run_migrations "plan"
+run_migrations "service"
+run_migrations "design"
+run_migrations "cart"
+run_migrations "complaint"
+run_migrations "order"
+run_migrations "payment"
+run_migrations "notification"
+run_migrations "advertisement"
+
 # Final migration check
 # echo "Running any remaining migrations..."
 python manage.py makemigrations --noinput

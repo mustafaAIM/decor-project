@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "order",
     "payment",
     "notification",
+    "advertisement",
     #3rd parties
     "django_filters",
     "corsheaders",
