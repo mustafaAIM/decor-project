@@ -15,6 +15,6 @@ class AdvertisementPagination(PageNumberPagination):
 class AdvertisementViewSet(viewsets.ModelViewSet):
     queryset = Advertisement.objects.filter(is_active=True).order_by('-created_at')
     serializer_class = AdvertisementSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    permission_classes = [IsAdminOrReadOnly]
     pagination_class = AdvertisementPagination
     lookup_field = 'uuid'
