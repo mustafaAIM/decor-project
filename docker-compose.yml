@@ -51,6 +51,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - static_volume:/var/www/static
       - media_volume:/var/www/media
+      - /home/dev/myproject/react-app/build:/usr/share/nginx/html:ro
     depends_on:
       - app
   redis:
