@@ -1,0 +1,1 @@
+from .advertisement_model import Advertisement

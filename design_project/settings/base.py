@@ -32,8 +32,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_ENV') == 'development'
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['*']  # For development only. In production, specify your domains.
 
 # Application definition
 
@@ -45,8 +44,27 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     #apps
     "authentication",
+    "customer",
+    "section",
+    "product",
+    "service", 
+    "plan",
+    "cart",
+    "employee",
+    "complaint",
+    "design",
+    "order",
+    "payment",
+    "notification",
+    "advertisement",
+    #3rd parties
+    "django_filters",
+    "corsheaders",
+    'channels',
 ]
 
 JAZZMIN_SETTINGS = {
@@ -54,7 +72,7 @@ JAZZMIN_SETTINGS = {
     "site_header": "My Admin Header",
     "site_brand": "My Brand",
     "welcome_sign": "Welcome to My Admin",
-    "copyright": "My Company",
+    "copyright": "Django Developers",
     "search_model": "auth.User",
     "user_avatar": "path/to/avatar.png",  
     "show_ui_builder": True,  
@@ -63,6 +81,7 @@ JAZZMIN_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -77,7 +96,10 @@ ROOT_URLCONF = "design_project.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'product' / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -133,7 +155,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Dubai"
 
 USE_I18N = True
 
@@ -156,3 +178,84 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 AUTH_USER_MODEL = 'authentication.User'
+
+
+# settings.py
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Dubai'
+
+
+#email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.hostinger.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "sk@serinek.com"
+EMAIL_HOST_PASSWORD = "Moustafa@0935383965"
+
+
+
+#REST 
+from datetime import timedelta
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'utils.exception_handler.custom_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+DEBUG_API_ERRORS = True
+
+# PayPal Settings
+PAYPAL_MODE = 'sandbox'  # Change to 'live' in production
+PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')
+PAYPAL_CLIENT_SECRET = os.getenv('PAYPAL_CLIENT_SECRET')
+
+# Platform-specific PayPal URLs
+PAYPAL_WEB_BASE_URL = os.getenv('PAYPAL_WEB_BASE_URL', 'http://localhost:3000')
+PAYPAL_IOS_URL_SCHEME = os.getenv('PAYPAL_IOS_URL_SCHEME', 'com.yourapp://')
+PAYPAL_ANDROID_URL_SCHEME = os.getenv('PAYPAL_ANDROID_URL_SCHEME', 'com.yourapp://')
+
+# These can be removed or kept as fallbacks
+PAYPAL_RETURN_URL = os.getenv('PAYPAL_RETURN_URL', 'http://localhost:3000/payment/success')
+PAYPAL_CANCEL_URL = os.getenv('PAYPAL_CANCEL_URL', 'http://localhost:3000/payment/cancel')
+
+# PayPal Mobile Settings
+PAYPAL_IOS_RETURN_URL = os.getenv('PAYPAL_IOS_RETURN_URL', 'https://your-domain.com/ios/payment/success')
+PAYPAL_IOS_CANCEL_URL = os.getenv('PAYPAL_IOS_CANCEL_URL', 'https://your-domain.com/ios/payment/cancel')
+PAYPAL_ANDROID_RETURN_URL = os.getenv('PAYPAL_ANDROID_RETURN_URL', 'https://your-domain.com/android/payment/success')
+PAYPAL_ANDROID_CANCEL_URL = os.getenv('PAYPAL_ANDROID_CANCEL_URL', 'https://your-domain.com/android/payment/cancel')
+
+# Stripe Settings
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = 'whsec_lVKiopnJanGoQztOFIRWIvqFxmfMM5tR'
+
+# Specify the ASGI application
+ASGI_APPLICATION = 'design_project.asgi.application'
+
+# Channel layers configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [(os.getenv('REDIS_HOST', 'redis'), 6379)],
+        },
+    },
+}
