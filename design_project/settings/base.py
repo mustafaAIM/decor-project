@@ -220,6 +220,8 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+DEBUG_API_ERRORS = True
+
 # PayPal Settings
 PAYPAL_MODE = 'sandbox'  # Change to 'live' in production
 PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID')

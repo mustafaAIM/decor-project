@@ -20,6 +20,7 @@ services:
       - .:/app
       - static_volume:/app/static
       - media_volume:/app/media
+    container_name: improved_app
 
   db:
     image: postgres:15
@@ -29,7 +30,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
- 
+    container_name: improved_db
 
   pgadmin:
     image: dpage/pgadmin4
@@ -40,7 +41,8 @@ services:
       - "5050:80"
     depends_on:
       - db
-  
+    container_name: improved_pgadmin
+
   nginx:
     image: nginx:latest
     ports:
@@ -54,12 +56,16 @@ services:
       - /home/dev/myproject/react-app/build:/usr/share/nginx/html:ro
     depends_on:
       - app
+    container_name: improved_nginx
+
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    container_name: improved_redis
+
   celery:
     build: .
     env_file:
@@ -69,7 +75,8 @@ services:
     depends_on:
       - db
     command: ./entrypoint-celery.sh
-  
+    container_name: improved_celery
+
 volumes:
   postgres_data:
   static_volume:
