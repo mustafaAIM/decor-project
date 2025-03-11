@@ -37,4 +37,3 @@ class AuthenticationException(BaseAPIException):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
 
-# ... other exception classes ...

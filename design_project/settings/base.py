@@ -88,7 +88,10 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    'core.throttling.middleware.ThrottlingMiddleware',
+  
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'core.middleware.logging.APILoggingMiddleware',
 ]
 
 ROOT_URLCONF = "design_project.urls"
@@ -191,11 +194,11 @@ CELERY_TIMEZONE = 'Asia/Dubai'
 
 #email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.hostinger.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "sk@serinek.com"
-EMAIL_HOST_PASSWORD = "Moustafa@0935383965"
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
 
 
@@ -203,7 +206,7 @@ EMAIL_HOST_PASSWORD = "Moustafa@0935383965"
 from datetime import timedelta
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'utils.exception_handler.custom_exception_handler',
+    'EXCEPTION_HANDLER': 'core.exceptions.handlers.custom_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -259,3 +262,11 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+
+
+THROTTLE_EXCLUDED_PATHS = [
+    '/admin/',
+    '/static/',
+    '/media/',
+]

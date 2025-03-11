@@ -1,4 +1,6 @@
 from django.db import models
+from core.mixins.models import UUIDMixin, SoftDeleteMixin, AuditMixin, StatusMixin
+from django.utils import timezone
 
 class TimeStampedModel(models.Model):
     """
@@ -10,3 +12,14 @@ class TimeStampedModel(models.Model):
 
     class Meta:
         abstract = True 
+
+
+
+
+class BaseModel(UUIDMixin, SoftDeleteMixin, AuditMixin , TimeStampedModel):
+    class Meta:
+        abstract = True
+
+class BaseStatusModel(BaseModel, StatusMixin):
+    class Meta:
+        abstract = True

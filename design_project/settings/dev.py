@@ -59,3 +59,4 @@ STATIC_ROOT = '/app/static'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/app/media'
+

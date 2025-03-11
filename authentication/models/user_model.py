@@ -1,15 +1,16 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-import uuid
-#time
-from django.utils import timezone 
+from django.utils import timezone
 from datetime import timedelta
-#OS 
-# import os
+from core.abstract.base import BaseModel
 
 class UserManager(BaseUserManager):
-    """manager for User."""
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+    def with_deleted(self):
+        return super().get_queryset()
 
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -33,16 +34,12 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-
-class User(AbstractBaseUser, PermissionsMixin):
-    """User model with additional fields and roles."""
-    
+class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     class Role(models.TextChoices):
         ADMIN = "ADMIN", _("Admin")
         DEVELOPER = "DEVELOPER", _("Developer")
         CUSTOMER = "CUSTOMER", _("Customer")
 
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(_("email address"), unique=True)
     first_name = models.CharField(_("first name"), max_length=50)
     last_name = models.CharField(_("last name"), max_length=50)
@@ -52,11 +49,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(_("staff status"), default=False)
     date_joined = models.DateTimeField(_("date joined"), auto_now_add=True)
     role = models.CharField(
-        _("role"), max_length=10, choices=Role.choices, default=Role.CUSTOMER
+        _("role"), 
+        max_length=10, 
+        choices=Role.choices, 
+        default=Role.CUSTOMER
     )
-    otp = models.CharField(_("otp"), max_length=6,null=True,blank=True)
-    otp_exp = models.DateTimeField(null = True,blank = True)
-    image = models.ImageField(_("image"), blank=True , null=True)
+    otp = models.CharField(_("otp"), max_length=6, null=True, blank=True)
+    otp_exp = models.DateTimeField(null=True, blank=True)
+    image = models.ImageField(_("image"), upload_to='users/', blank=True, null=True)
+    last_password_change = models.DateTimeField(null=True, blank=True)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    failed_login_attempts = models.PositiveIntegerField(default=0)
     
     objects = UserManager()
 
@@ -66,9 +69,38 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         verbose_name = _("user")
         verbose_name_plural = _("users")
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
     
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    def get_short_name(self):
+        return self.first_name
+    
     def is_otp_expired(self): 
-        return self.otp_exp < timezone.now() -  timedelta(minutes=10)
+        if not self.otp_exp:
+            return True
+        print(self.otp_exp  )
+        print(timezone.now()) 
+        print(self.otp_exp < timezone.now() - timedelta(minutes=10))
+        return self.otp_exp < timezone.now() - timedelta(minutes=10)
+
+    @property
+    def is_admin(self):
+        return self.role == self.Role.ADMIN
+
+    @property
+    def is_developer(self):
+        return self.role == self.Role.DEVELOPER
+
+    @property
+    def is_customer(self):
+        return self.role == self.Role.CUSTOMER
+
+    def is_locked(self):
+        if self.locked_until and self.locked_until > timezone.now():
+            return True
+        return False

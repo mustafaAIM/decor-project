@@ -4,58 +4,98 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 #models 
 from authentication.models import User
 #django 
-from django.contrib.auth.hashers import make_password
-from utils import BadRequestError
+from core.exceptions.api import BadRequestException
 #utils 
-from authentication.utils import message
-
+from authentication.services.auth_service import AuthenticationService
+from authentication.services.password_service import PasswordService
+from authentication.services.profile_service import ProfileService
+#validator
+from authentication.validators import PasswordPolicyValidator
 class RegisterSerializer(serializers.ModelSerializer):
-      email = serializers.EmailField(required=True)
-      class Meta:
-            model = User
-            fields = "__all__"
-            extra_kwargs = {
-                  "password":{
-                        "write_only":True,
-                  }
-            }
+    def __init__(self, instance=None, data=..., **kwargs):
+        self.password_validator = PasswordPolicyValidator()
+        super().__init__(instance, data, **kwargs)
 
-      def validate_email(self, value):
-        existing_user = User.objects.filter(email=value).first()
+    email = serializers.EmailField(required=True)
+    class Meta:
+        model = User
+        fields = "__all__"
+        extra_kwargs = {'password': {'write_only': True}}
+    
+    def validate_password(self,value):
+        self.password_validator.validate(value)
+        return value
+    
+    def validate_email(self, value):
+        existing_user = User.objects.with_deleted().filter(email=value).first()
         if existing_user:
             if existing_user.is_active:
-                raise BadRequestError(
+                raise BadRequestException(
                     en_message="Email is already registered and verified. Please login instead.",
                     ar_message="البريد الإلكتروني مسجل ومفعل بالفعل. الرجاء تسجيل الدخول"
                 )
-            existing_user.delete()
+            existing_user.hard_delete()
         return value
-      
-      def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
-        data = super().create(validated_data)
-        return data
-      
+
+    def create(self, validated_data):
+        validated_data.pop("groups", None)
+        validated_data.pop("user_permissions", None)
+        return AuthenticationService().create_user(validated_data)
 
 class OTPVerificationSerializer(serializers.Serializer):
-      email = serializers.EmailField(max_length=255, required=True)
-      otp = serializers.CharField(max_length=6)
+    email = serializers.EmailField(max_length=255, required=True)
+    otp = serializers.CharField(max_length=6)
 
-      def validate(self, attrs):
-          
-          if not User.objects.filter(email=attrs["email"],otp = attrs["otp"]).exists():
-              raise BadRequestError(en_message="OTP is invalid",ar_message="OTP غير صحيح")
-          user = User.objects.get(email=attrs["email"],otp = attrs["otp"])
-          if user.is_otp_expired(): 
-              raise BadRequestError(en_message="OTP EXPIRED",ar_message="انتهت فعالية الرمز")
-          user.otp = None
-          user.otp_exp = None     
-          user.is_active = True
-          user.save()   
-          return super().validate(attrs)
+    def validate(self, attrs):
+        AuthenticationService().verify_email(attrs["email"], attrs["otp"])
+        return super().validate(attrs)
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.password_service = PasswordService()
+
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise BadRequestException(
+                en_message="No user is associated with this email address",
+                ar_message="لا يوجد مستخدم مسجل بهذا الايميل"
+            )
+        self.password_service.request_reset(value)
+        return value
 
 
+class PasswordResetVerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.password_service = PasswordService()
+
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        self.password_service.verify_reset_otp(
+            validated_data['email'],
+            validated_data['otp']
+        )
+        return validated_data
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    new_password = serializers.CharField(min_length=8)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.password_service = PasswordService()
+
+    def save(self):
+        self.password_service.reset_password(
+            self.validated_data['email'],
+            self.validated_data['new_password']
+        )
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -70,43 +110,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user'] = user_serializer.data
         data['role'] = self.user.role
         return data
-
-
-class PasswordResetRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-
-    def validate_email(self, value):
-        if not User.objects.filter(email=value).exists():
-            raise BadRequestError(en_message="No user is associated with this email address", ar_message="لا يوجد مستخدم مسجل بهذا الايميل")
-        return value
-
-class PasswordResetVerifyOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-    otp = serializers.CharField(max_length=6)
-    def validate(self, attrs):
-        user = User.objects.filter(email=attrs['email'], otp=attrs['otp']).first()
-        if not user:
-            raise BadRequestError(en_message="OTP is invalid", ar_message="OTP غير صحيح")
-        if user.is_otp_expired():
-            raise BadRequestError(en_message="OTP EXPIRED", ar_message="انتهت فعالية الرمز")
-        user.otp = None
-        user.otp_exp = None
-        user.save()
-        return attrs
-
-class PasswordResetSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-    new_password = serializers.CharField(write_only=True)
-
-    def validate_email(self, value):
-        if not User.objects.filter(email=value).exists():
-            raise BadRequestError(en_message="No user is associated with this email address", ar_message="لا يوجد مستخدم مسجل بهذا الايميل")
-        return value
-
-    def save(self):
-        user = User.objects.get(email=self.validated_data['email'])
-        user.password = make_password(self.validated_data['new_password'])
-        user.save()
 
 class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:
@@ -128,8 +131,4 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ('uuid', 'email')
 
     def update(self, instance, validated_data):
-        if 'image' in validated_data and instance.image:
-            if instance.image:
-                instance.image.delete(save=False)
-        
-        return super().update(instance, validated_data)
+        return ProfileService().update_profile(instance, validated_data)

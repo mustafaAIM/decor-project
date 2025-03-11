@@ -6,11 +6,6 @@ def message(en,ar,status):
               "ar":str(ar),
              }
          }
-          
-
-
-
-
 
 def generate_random_otp() -> str:
   import random

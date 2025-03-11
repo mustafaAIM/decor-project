@@ -49,7 +49,7 @@ class ResponseFormatter:
             status=status_code
         )
 
-# Common messages that can be reused across the application
+
 class Messages:
     class Search:
         NO_RESULTS = {

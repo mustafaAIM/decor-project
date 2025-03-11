@@ -8,37 +8,43 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 #serializers 
 from authentication.serializers import *
 from customer.serializers import *
+#services
+from authentication.services import OTPService
+#formatter
+from core.utils.messages import ResponseFormatter
 
-#utils 
-from authentication.utils import * 
-#django
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
+formatter = ResponseFormatter()
 
-#tasks
-from authentication.tasks import * 
 
 #TODO add rate limit
 class RegisterViewSet(ViewSet):
   serializer_class = RegisterSerializer
   
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+    self.otp_service = OTPService()
+
   def create(self, request, *args, **kwargs):
       user_data = request.data
       serialized_data = RegisterSerializer(data = user_data)
       serialized_data.is_valid(raise_exception=True)
       serialized_data.save() 
-      return Response(serialized_data.data,HTTP_201_CREATED)
+      return formatter.success_response(
+        data=serialized_data.data,
+        message={"en":"User created successfully","ar":"تم إنشاء المستخدم بنجاح"},
+        status_code=HTTP_201_CREATED
+      )
   
 
   @action(detail="False" , methods=["POST"])
   def resend(self, request, *args,**kwargs):
      email = request.data.get("email")
-     user = get_object_or_404(User, email=email)
-     user.otp = generate_random_otp()
-     user.otp_exp = timezone.now()
-     user.save()
-     send_verification_email_task.delay(email, user.otp)
-     return Response(message("OTP Sent","تم إرسال الرمز","success"),HTTP_200_OK)
+     self.otp_service.set_strategy('email_verification')
+     self.otp_service.resend_otp(email)
+     return formatter.success_response(
+        message={"en":"OTP Sent","ar":"تم إرسال الرمز"},
+        status_code=HTTP_200_OK
+     )
      
 
   #TODO response check
@@ -50,8 +56,10 @@ class RegisterViewSet(ViewSet):
         serialized_customer = CustomerSerializer(data = {"user":user.id})
         serialized_customer.is_valid(raise_exception=True)
         serialized_customer.save()
-        response = message("Email verified","تم التحقق من الايميل","OK")
-        return Response(response,HTTP_200_OK)
+        return formatter.success_response(
+          message={"en":"Email verified","ar":"تم التحقق من الايميل"},
+          status_code=HTTP_200_OK
+        )
       
 
 class LoginView(TokenObtainPairView):
@@ -64,32 +72,27 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data['email']
-        
-        user = get_object_or_404(User, email=email)
-        user.otp = generate_random_otp()
-        user.otp_exp = timezone.now()
-        user.save()
-        send_reset_password_verification_email_task.delay(email, user.otp)
-
-        return Response(message("OTP Sent","تم إرسال الرمز","success"), status=HTTP_200_OK)
+        return formatter.success_response(
+          message={"en":"OTP Sent","ar":"تم إرسال الرمز"},
+          status_code=HTTP_200_OK
+        )
 
 class PasswordResetVerifyOTPView(APIView):
     def post(self, request):
         serializer = PasswordResetVerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(
-            message(
-                en="OTP verified. Please enter your new password.", 
-                ar="تم التأكد من الرمز، الرجاء ادخال كلمة المرور الجديدة", 
-                status='success'
-            ), 
-            status=HTTP_200_OK
-        )
+
+        return formatter.success_response(
+          message={"en":"OTP verified. Please enter your new password.","ar":"تم التأكد من الرمز، الرجاء ادخال كلمة المرور الجديدة"},
+          status_code=HTTP_200_OK
+       )
 
 class PasswordResetView(APIView):
     def post(self, request):
-        serializer = PasswordResetSerializer(data=request.data)
+        serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(message(en="Password has been reset successfully.", ar="تم إعادة تعيين كلمة المرور بنجاح", status="success"),status=HTTP_200_OK)
+        return formatter.success_response(
+          message={"en":"Password has been reset successfully.","ar":"تم إعادة تعيين كلمة المرور بنجاح"},
+          status_code=HTTP_200_OK
+        )
