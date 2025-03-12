@@ -37,3 +37,10 @@ class AuthenticationException(BaseAPIException):
             status_code=status.HTTP_401_UNAUTHORIZED
         )
 
+class NotFoundException(BaseAPIException):
+    def __init__(self, en_message: str, ar_message: str, status_code: int, field: str = None):
+        super().__init__(
+            en_message=en_message,
+            ar_message= ar_message,
+            status_code=status.HTTP_404_NOT_FOUND
+        )
